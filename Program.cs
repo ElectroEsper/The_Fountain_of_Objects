@@ -1,6 +1,6 @@
 ﻿
 
-public static class Program
+public static partial class Program
 {
 	public static void Main()
 	{
@@ -179,6 +179,15 @@ public static class TextEngine
 		SetColor(color);
 		Console.Write(message);
 	}
+
+	public static void DisplayList(string[] message, ConsoleColor color)
+	{
+		SetColor(color);
+		foreach (string s in message)
+		{
+			Console.Write($"- {s}");
+		}
+	}
 }
 
 public static class MessageType
@@ -249,15 +258,20 @@ public static class Dialogs
 }
 
 //#################################################
-// PUBLIC CLASSES
-public class Player
+// GAME OBJECTS CLASSES
+public class GameObject
+{
+	public IVector2 Pos { get; set; }
+	public int InRoomIndex { get; set; }
+}
+public class Player : GameObject, IController, ICanDie, ICanInteract
 {
 	// Personnal reminder, this is a "Character" not the controller...
-	public Coordinate Coordinate { get; set; }
 	public ICommand? Command { get; set; }
 	public Player()
 	{
-		Coordinate =  new Coordinate(0,0);
+		Pos.X = 0;
+		Pos.Y = 0;
 	}
 
 	public void Run()
@@ -335,15 +349,57 @@ public class Player
 	}
 }
 
+public class Trap : GameObject, ICanAttack
+{
+	
+}
+
+public class Fountain : GameObject, ICanInteract
+{
+	
+}
+
+public interface ICanDie
+{
+	public void Death();
+}
+
+public interface IAi
+{
+	public ICommand? Command { get; set; }
+	public void Run(GameObject gameObject);
+}
+
+public interface ICanAttack
+{
+	public void Attack(GameObject target);
+}
+
+public interface ICanInteract
+{
+	public void Interact();
+}
+
+public interface IController
+{
+	public void Input();
+}
+
+public interface IVector2 
+{
+	public int X { get; set; }
+	public int Y { get; set;}
+	
+}
 //#################################################
 // COMMANDS
 public interface ICommand
 {
-	void Run(Player player);
+	void Run(GameObject gameObject);
 }
 public abstract class Command : ICommand
 {
-	public abstract void Run(Player player);
+	public abstract void Run(GameObject gameObject);
 	public bool IsValidMove(int x, int y )
 	{
 		if (x < 0 || x >= Dungeon.Width) {TextEngine.Display("\nYou hit a wall, making an unsurprising *THUD* doing so." +
@@ -356,42 +412,42 @@ public abstract class Command : ICommand
 }
 public class MoveNorth : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (!IsValidMove(player.Coordinate.X,player.Coordinate.Y + 1)) return;
-		player.Coordinate = new Coordinate(player.Coordinate.X, player.Coordinate.Y + 1);
+		if (!IsValidMove(gameObject.Pos.X,gameObject.Pos.Y + 1)) return;
+		gameObject.Pos.Y += 1;
 	}
 }
 public class MoveSouth : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (!IsValidMove(player.Coordinate.X, player.Coordinate.Y - 1)) return;
-		player.Coordinate = new Coordinate(player.Coordinate.X, player.Coordinate.Y- 1);
+		if (!IsValidMove(gameObject.Pos.X, gameObject.Pos.Y - 1)) return;
+		gameObject.Pos.Y -= 1;
 	}
 }
 public class MoveEast : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (!IsValidMove(player.Coordinate.X + 1, player.Coordinate.Y)) return;
-		player.Coordinate = new Coordinate(player.Coordinate.X + 1, player.Coordinate.Y);
+		if (!IsValidMove(gameObject.Pos.X + 1, gameObject.Pos.Y)) return;
+		gameObject.Pos.X += 1;
 	}
 }
 public class MoveWest : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (!IsValidMove(player.Coordinate.X - 1, player.Coordinate.Y)) return;
-		player.Coordinate = new Coordinate(player.Coordinate.X - 1, player.Coordinate.Y);
+		if (!IsValidMove(gameObject.Pos.X - 1, gameObject.Pos.Y)) return;
+		gameObject.Pos.X -= 1;
 	}
 }
 
 public class TurnOn : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (Dungeon.IsInFountainRoom(player))
+		if (Dungeon.IsInFountainRoom(gameObject))
 		{
 			if (Dungeon.GetFountainRoom().IsActive)
 			{
@@ -413,9 +469,9 @@ public class TurnOn : Command
 
 public class TurnOff : Command
 {
-	public override void Run(Player player)
+	public override void Run(GameObject gameObject)
 	{
-		if (Dungeon.IsInFountainRoom(player))
+		if (Dungeon.IsInFountainRoom(gameObject))
 		{
 			if (Dungeon.GetFountainRoom().IsActive)
 			{
@@ -437,46 +493,49 @@ public class TurnOff : Command
 
 //#################################################
 // STRUCTS
-public interface IRoom
+public class Room
 {
-	public Coordinate Coordinate { get; init; }
-	public RoomType Type { get; init; }
-}
-public class Room : IRoom
-{
-	public Coordinate Coordinate { get; init; }
-	public RoomType Type { get; init; }
-
-	public Room(int x, int y, RoomType type)
+	public IVector2 Pos { get; init; }
+	public GameObject[] InRooms { get; private set; }
+	public Room(int x, int y)
 	{
-		Coordinate  = new Coordinate(x, y);
-		Type = type;
+		Pos.X = x;
+		Pos.Y = y;
+	}
+
+	public void Enter(GameObject gameObject)
+	{
+		Add(gameObject);
+	}
+
+	public void Exit(GameObject gameObject)
+	{
+		Remove(gameObject.InRoomIndex);
+	}
+	
+	private void Remove(int index)
+	{
+		GameObject[] newArray = new GameObject[InRooms.Length - 1];
+		if (index > 0)
+			Array.Copy(InRooms, 0, newArray, 0, index);
+		if (index < InRooms.Length - 1)
+			Array.Copy(InRooms, index + 1, newArray, index, InRooms.Length - 1);
+		
+		InRooms = newArray;
+	}
+
+	private void Add(GameObject gameObject)
+	{
+		GameObject[] newArray = new GameObject[InRooms.Length + 1];
+		newArray[newArray.Length - 1] = gameObject;
+		InRooms = newArray;
 	}
 }
-public class FountainRoom : IRoom
-{
-	public Coordinate Coordinate { get; init; }
-	public RoomType Type { get; init; } = RoomType.Fountain;
-	public bool IsActive { get; set; } = false;
-	public bool Visited { get; set; } = false;
 
-	public FountainRoom(int x, int y)
-	{
-		Coordinate = new Coordinate(x, y);
-	}
-}
 public record struct SenseInfo(Direction Direction, IRoom Room);
-public struct Coordinate
-{
-	public int X;
-	public int Y;
 
-	public Coordinate(int x, int y)
-	{
-		X = x;
-		Y = y;
-	}
-}
 // ENUMS
 public enum RoomType { None, Entry, Fountain, Null}
 public enum Direction { Current, North, East, South, West}
+
+// Extention to "allow" array to get item removed and then resize the array
