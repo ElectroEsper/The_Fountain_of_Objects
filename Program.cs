@@ -202,26 +202,29 @@ public static class MessageType
 	//public static ConsoleColor Important = ConsoleColor.
 }
 
+public static class Team
+{
+	public static int WorldObject = 0;
+	public static int Player = 1;
+}
 public static class Dialogs
 {
 	public static string Intro = "You have made your way to the Cavern of Objects, high atop jagged mountains. Within these caverns" +
-	                             "\nlies the Fountain of Objects, the one-time source of the River of Objects that gave life to this entire" +
-	                             "\nisland. By returning the Heart of Object-Oriented Programming —the gem you received from Simula" +
-	                             "\nafter arriving on this island— to the Fountain of Objects, you can repair and restore the fountain to its" +
-	                             "\nformer glory." +
+	                             "lies the Fountain of Objects, the one-time source of the River of Objects that gave life to this entire" +
+	                             "island. By returning the Heart of Object-Oriented Programming —the gem you received from Simula" +
+	                             "after arriving on this island— to the Fountain of Objects, you can repair and restore the fountain to its" +
+	                             "former glory." +
 	                             "\n" +
-	                             "\nThe cavern is a grid of rooms, and no natural or human-made light works within due to unnatural" +
-	                             "\ndarkness. You can see nothing, but you can hear and smell your way through the caverns to find the" +
-	                             "\nFountain of Objects, restore it, and escape to the exit." +
+	                             "The cavern is a grid of rooms, and no natural or human-made light works within due to unnatural" +
+	                             "darkness. You can see nothing, but you can hear and smell your way through the caverns to find the" +
+	                             "Fountain of Objects, restore it, and escape to the exit." +
 	                             "\n";
 
 	public static string InputPrompt = "What do you do?: ";
 	public static string PrefixSameRoom = "In this room,";
 	public static string PrefixAdjacentRooms = "of you,";
-	public static string FountainNotVisited = " You suspect it could be the Fountain of ";
-	public static string FountainVisited = " You know its source is the Fountain of Objects.";
-	public static string FountainOff = " you hear water dripping.";
-	public static string FountainOn = " you hear flowing water.";
+	public static string FountainOff = " you hear water dripping. The Fountain of Objects.";
+	public static string FountainOn = " you hear flowing water. The Fountain of Objects.";
 	public static string InvalidMove = "A heavy *Thud* echoes. You've hit a wall.";
 
 	public static string HorizontalLine =
@@ -229,13 +232,13 @@ public static class Dialogs
 
 	public static string FountainOffActivate =
 		"As you feel blindly in front of you, you touch something wet. You smile," +
-		"\nknowing well this is it, the Fountain of Objects." +
+		"knowing well this is it, the Fountain of Objects." +
 		"\n" +
-		"\nYou, clumsily, manage to place the Heart of Objects in the right spot." +
-		"\nAs if to reward you, the slow drip of water awakens into a strong, continuous" +
-		"\nflow." +
+		"You, clumsily, manage to place the Heart of Objects in the right spot." +
+		"As if to reward you, the slow drip of water awakens into a strong, continuous" +
+		"flow." +
 		"\n" +
-		"\nThe Fountain is now active.";
+		"The Fountain is now active.";
 
 	public static string FountainOnActivate = "You search you pockets, looking for the Heart of Objects. Why you're doing" +
 	                                          "\nthis is unclear, as you know well that you have placed the heart into " +
@@ -263,6 +266,7 @@ public class GameObject
 {
 	public IVector2 Pos { get; set; }
 	public int InRoomIndex { get; set; }
+	public int Team { get; init; }
 }
 public class Player : GameObject, IController, ICanDie, ICanInteract
 {
@@ -279,84 +283,51 @@ public class Player : GameObject, IController, ICanDie, ICanInteract
 		Command?.Run(this);
 	}
 
-	public void Sense()
+	public void Death()
 	{
-		IRoom[] adjacentRooms = Dungeon.GetAdjacentRooms(Coordinate.X, Coordinate.Y);
-		SenseInfo[] senseData = new SenseInfo[adjacentRooms.Length];
-		senseData[0] = new SenseInfo(Direction.Current, adjacentRooms[0]);
-		senseData[1] = new SenseInfo(Direction.North, adjacentRooms[1]);
-		senseData[2] = new SenseInfo(Direction.East, adjacentRooms[2]);
-		senseData[3] = new SenseInfo(Direction.South, adjacentRooms[3]);
-		senseData[4] = new SenseInfo(Direction.West, adjacentRooms[4]);
-		
-		Sense(senseData);
+		throw new NotImplementedException();
 	}
-	
-	public void Sense(SenseInfo[]?  senseData)
+
+	public void Interact()
 	{
-		string[] input = new string[0];
-		foreach (SenseInfo info in senseData)
-		{
-			// Set the prefix - is it in this room, or adjacent?
-			Array.Resize(ref input, input.Length + 1);
-			input[input.Length - 1] = info.Direction == Direction.Current ? Dialogs.PrefixSameRoom : $" {info.Direction} {Dialogs.PrefixAdjacentRooms}";
-			
-			
-			// Then add based on room type...
-			Array.Resize(ref input, input.Length + 1);
-			if (info.Room.Type is RoomType.Null)
-			{
-				input[input.Length - 1] = Dialogs.NullRoom;
-			}
+		throw new NotImplementedException();
+	}
 
-			if (info.Room.Type is RoomType.None)
-			{
-				input[input.Length - 1] = Dialogs.EmptyRoom;
-			}
-
-			if (info.Room.Type is RoomType.Entry)
-			{
-				input[input.Length - 1] = Dialogs.EntryRoom;
-			}
-
-			if (info.Room.Type is RoomType.Fountain)
-			{
-				FountainRoom room = (FountainRoom)info.Room;
-				if (room.IsActive)
-				{
-					input[input.Length - 1] = Dialogs.FountainOn;
-				}
-				else
-				{
-					input[input.Length - 1] = Dialogs.FountainOff;
-				}
-
-				Array.Resize(ref input, input.Length + 1);
-				if (room.Visited)
-				{
-					input[input.Length - 1] = Dialogs.FountainVisited;
-				}
-				else
-				{
-					input[input.Length - 1] = Dialogs.FountainNotVisited;
-				}
-			}
-			
-		}
-		TextEngine.Display(input, MessageType.Sense);
-		
-		
+	public void Input()
+	{
+		throw new NotImplementedException();
 	}
 }
 
-public class Trap : GameObject, ICanAttack
+public class Trap : GameObject, ICanAttack, IPerceptible
 {
-	
+	public bool LocalOnly { get; init; }
+
+	public void Attack(GameObject target)
+	{
+		throw new NotImplementedException();
+	}
+
+	public string Emit()
+	{
+		throw new NotImplementedException();
+	}
 }
 
-public class Fountain : GameObject, ICanInteract
+public class Fountain : GameObject, ICanInteract, IPerceptible
 {
+	public bool LocalOnly { get; init; }
+	public bool Active { get; set; } = false;
 	
+	public string Emit()
+	{
+		return Active ? Dialogs.FountainOn : Dialogs.FountainOff;
+	}
+
+	public void Interact()
+	{
+		throw new NotImplementedException();
+	}
 }
 
 public interface ICanDie
@@ -383,6 +354,12 @@ public interface ICanInteract
 public interface IController
 {
 	public void Input();
+}
+
+public interface IPerceptible
+{
+	public bool LocalOnly { get; init; }
+	public string Emit();
 }
 
 public interface IVector2 
@@ -531,8 +508,6 @@ public class Room
 		InRooms = newArray;
 	}
 }
-
-public record struct SenseInfo(Direction Direction, IRoom Room);
 
 // ENUMS
 public enum RoomType { None, Entry, Fountain, Null}
