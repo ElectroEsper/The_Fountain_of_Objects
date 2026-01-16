@@ -80,7 +80,7 @@ namespace The_Fountain_of_Objects
 			}
 			void GameOverCheck()
 			{
-				if (Dungeon.FountainIsActive && (player.Coordinate.X == 0 && player.Coordinate.Y == 0))
+				if (Dungeon.FountainIsActive && (player.Pos.X == 0 && player.Pos.Y == 0))
 				{
 					isPlaying = false;
 					TextEngine.Display("YOU WIN!", MessageType.Positive);
@@ -115,14 +115,14 @@ namespace The_Fountain_of_Objects
 		public static Room[] GetAdjacentRooms(int x, int y)
 		{
 			// Only 5 entries; 4 directions to move to and where the player stands... 
-			Room[] output = new Room[5];
+			Room[] output = new Room[0];
 			
 			// If room is out of bounds, make a variant with a null type.
-			output[0] = Rooms[x, y];
-			output[1] = IsInBounds(x, y + 1) ? Rooms[x, y + 1] : new Room(0,0);
-			output[2] = IsInBounds(x + 1, y) ? Rooms[x + 1, y] : new Room(0,0);
-			output[3] = IsInBounds(x , y - 1) ? Rooms[x , y - 1] : new Room(0,0);
-			output[4] = IsInBounds(x - 1, y) ? Rooms[x - 1, y] : new Room(0,0);
+			output.AddTo(Rooms[x, y]);
+			if (IsInBounds(x, y + 1)) output.AddTo(Rooms[x, y + 1]);
+			if (IsInBounds(x + 1, y)) output.AddTo(Rooms[x + 1, y]);
+			if (IsInBounds(x , y - 1)) output.AddTo(Rooms[x , y - 1]);
+			if (IsInBounds(x - 1, y)) output.AddTo(Rooms[x - 1, y]);
 			
 			return output;
 		}
@@ -271,17 +271,14 @@ namespace The_Fountain_of_Objects
 
 	//#################################################
 	// GAME OBJECTS CLASSES
-	public class GameObject : IPerceptible
+	public abstract class GameObject : IPerceptible
 	{
 		public IVector2 Pos { get; set; }
 		public int InRoomIndex { get; set; }
 		public int Team { get; init; }
 		public bool LocalOnly { get; init; }
 
-		public string Emit()
-		{
-			throw new NotImplementedException();
-		}
+		public abstract Stimuli Emit();
 	}
 	public class Player : GameObject, IController, IAlive, ICanInteract
 	{
@@ -312,18 +309,23 @@ namespace The_Fountain_of_Objects
 		{
 			throw new NotImplementedException();
 		}
+
+		public void Sense()
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 	public class Trap : GameObject, ICanAttack
 	{
-		public bool LocalOnly { get; init; } = false;
+		public new bool LocalOnly { get; init; } = false;
 
 		public void Attack(GameObject target)
 		{
 			throw new NotImplementedException();
 		}
 
-		public string Emit()
+		public override string Emit()
 		{
 			return new Stimuli(TODO, this.ToString(), StimuliType.Touch);
 		}
@@ -331,14 +333,14 @@ namespace The_Fountain_of_Objects
 
 	public class Amarok : GameObject, ICanAttack
 	{
-		public bool LocalOnly { get; init; } = false;
+		public new bool LocalOnly { get; init; } = false;
 
 		public void Attack(GameObject target)
 		{
 			throw new NotImplementedException();
 		}
 
-		public string Emit()
+		public override string Emit()
 		{
 			return new Stimuli(TODO, this.ToString(), StimuliType.Smell);
 		}
@@ -346,19 +348,19 @@ namespace The_Fountain_of_Objects
 
 	public class Entry : GameObject
 	{
-		public bool LocalOnly { get; init; } = true;
+		public new bool LocalOnly { get; init; } = true;
 
-		public Stimuli Emit()
+		public override Stimuli Emit()
 		{
 			return new Stimuli(Dialogs.EntryRoom, this.ToString(), StimuliType.Touch);
 		}
 	}
 	public class Fountain : GameObject, ICanInteract
 	{
-		public bool LocalOnly { get; init; } = true;
+		public new bool LocalOnly { get; init; } = true;
 		public bool Active { get; set; } = false;
 		
-		public Stimuli Emit()
+		public override Stimuli Emit()
 		{
 			return Active ? new Stimuli(Dialogs.FountainOn, this.ToString(), StimuliType.Audio) : new Stimuli(Dialogs.FountainOff, this.ToString(), StimuliType.Audio);
 		}
@@ -398,7 +400,7 @@ namespace The_Fountain_of_Objects
 	public interface IPerceptible
 	{
 		public bool LocalOnly { get; init; }
-		public string Emit();
+		public Stimuli Emit();
 	}
 
 	public interface IVector2 
