@@ -77,6 +77,10 @@ namespace The_Fountain_of_Objects
 
 		public void MainMenu()
 		{
+			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
+			TextEngine.Display("Welcome to The Fountain of Objects!",  MessageType.Neutral);
+			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
+			TextEngine.Display("",MessageType.Neutral);
 			string[] menus = new string[]
 			{
 				"New Game",
@@ -84,6 +88,7 @@ namespace The_Fountain_of_Objects
 				"Exit"
 			};
 			TextEngine.DisplayList(menus,MessageType.Question);
+			TextEngine.DisplayInline("\nEnter your action:",MessageType.Neutral);
 			
 			string? input = TextEngine.Input();
 			switch (input)
@@ -104,25 +109,28 @@ namespace The_Fountain_of_Objects
 		public void NewGame()
 		{
 			Console.Clear();
+			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
 			TextEngine.Display("Choose the cavern's size:", MessageType.Narrative);
 			TextEngine.DisplayList(new string[]{"small","medium","large"}, MessageType.Question);
-			
+			TextEngine.DisplayInline("\nEnter your choice:",MessageType.Neutral);
 			string? input = TextEngine.Input();
 			switch (input)
 			{
-				case "small" :
+				case "1" :
 					Dungeon.Init(4,4);
 					break;
-				case "medium" :
+				case "2" :
 					Dungeon.Init(6,6);
 					break;
-				case "large":
+				case "3":
 					Dungeon.Init(8,8);
 					break;
 				default :
 					break;
 			};
 			Console.Clear();
+			
+			
 			GameLoop();
 		}
 
@@ -134,6 +142,14 @@ namespace The_Fountain_of_Objects
 			
 			while (isPlaying)
 			{
+				// Player senses environment
+				player.Sense();
+				
+				// Wait for player's input...
+				player.Input();
+				
+				// Apply player's command
+				player.Run();
 				
 			}
 		}
@@ -142,7 +158,23 @@ namespace The_Fountain_of_Objects
 		{
 			TextEngine.Display(Dialogs.Intro,MessageType.Narrative);
 			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
+			TextEngine.Display("",MessageType.Neutral);
 		}
+	}
+
+	public static class GameState
+	{
+		public static GameObject[] Enemies { get; private set; }
+		public static Player[] Players { get; private set; }
+		public static bool IsFountainActive { get; private set; }
+
+		public static void AddEnemy(GameObject gameObject) { Enemies = Enemies.AddTo(gameObject); }
+
+		public static void AddPlayer(Player player){ Players = Players.AddTo(player); }
+		
+		public static void ActivateFountain() { IsFountainActive = true; }
+		public static void DeactivateFountain() { IsFountainActive = false; }
+		
 	}
 	
 	//#################################################
@@ -199,17 +231,17 @@ namespace The_Fountain_of_Objects
 			{
 				for (int _y = 0; _y < y; _y++)
 				{
-					Rooms[_x, _y] = new Room(_x, _y);
+					Rooms[_x, _y] = new Room(_x, _y, new GameObject[0]);
 				}
 			}
 		}
 		private static void SetEntry(int x, int y)
 		{
-			Rooms[x, y] = new Room(x, y, new GameObject[] { new Entry() });
+			Rooms[x, y] = new Room(x, y, new GameObject[] {new Entry(x,y)});
 		}
 		private static void SetFountain(int x, int y)
 		{
-			Rooms[x, y] = new Room(x, y,new GameObject[] {new Fountain()});
+			Rooms[x, y] = new Room(x, y,new GameObject[] {new Fountain(x,y)});
 		}
 	}
 	public static class TextEngine
@@ -218,7 +250,7 @@ namespace The_Fountain_of_Objects
 		
 		public static string Input()
 		{
-			DisplayInline(Dialogs.InputPrompt, MessageType.Question);
+			//DisplayInline(Dialogs.InputPrompt, MessageType.Question);
 			SetColor(MessageType.Player);
 			return new string(Console.ReadLine());
 		}
@@ -368,18 +400,25 @@ namespace The_Fountain_of_Objects
 		public IVector2 Pos { get; set; } = new IVector2();
 		public int InRoomIndex { get; set; }
 		public int Team { get; init; }
-		public bool LocalOnly { get; init; }
-
+		public abstract bool LocalOnly { get; init; }
+		internal void Spawn()
+		{
+			Dungeon.Rooms[Pos.X, Pos.Y].Enter(this);
+		}
 		public abstract Stimuli Emit();
+
 	}
 	public class Player : GameObject, IController, IAlive, ICanInteract
 	{
 		// Personnal reminder, this is a "Character" not the controller...
+		public override bool LocalOnly { get; init; } = true;
 		public ICommand? Command { get; set; }
 		public Player()
 		{
 			Pos.X = 0;
 			Pos.Y = 0;
+			
+			Spawn();
 		}
 
 		public void Run()
@@ -399,7 +438,21 @@ namespace The_Fountain_of_Objects
 
 		public void Input()
 		{
-			throw new NotImplementedException();
+			TextEngine.DisplayInline($"({Pos.X},{Pos.Y}){Dialogs.InputPrompt}",MessageType.Question);
+			string? input = TextEngine.Input();
+
+			Command = input switch
+			{
+				"move north" => new MoveNorth(),
+				"move east" => new MoveEast(),
+				"move south" => new MoveSouth(),
+				"move west" => new MoveWest(),
+				"activate fountain" => new TurnOn(),
+				"deactivate fountain" => new TurnOff(),
+				_ => null
+			};
+			
+			
 		}
 
 		public override Stimuli Emit()
@@ -416,7 +469,12 @@ namespace The_Fountain_of_Objects
 				if (room.Entities?.Length == null) continue;
 				foreach (GameObject? gameObject in room?.Entities)
 				{
-					stimuli = stimuli.AddTo(gameObject.Emit());
+					if (gameObject.LocalOnly && (gameObject.Pos.X != Pos.Y && gameObject.Pos.Y != Pos.Y))
+						continue;
+					else
+					{
+						stimuli = stimuli.AddTo(gameObject.Emit());
+					}
 				}
 			}
 
@@ -437,8 +495,15 @@ namespace The_Fountain_of_Objects
 
 	public class Trap : GameObject, ICanAttack
 	{
-		public new bool LocalOnly { get; init; } = false;
+		public override bool LocalOnly { get; init; }
 
+		public Trap(int x, int y)
+		{
+			Pos.X = x;
+			Pos.Y = y;
+			LocalOnly = false;
+			Spawn();
+		}
 		public void Attack(GameObject target)
 		{
 			throw new NotImplementedException();
@@ -450,25 +515,63 @@ namespace The_Fountain_of_Objects
 		}
 	}
 
-	public class Amarok : GameObject, ICanAttack
+	public class Amarok : GameObject, ICanAttack, IAlive
 	{
-		public new bool LocalOnly { get; init; } = false;
+		public override bool LocalOnly { get; init; } = false;
 
+		public Amarok(int x, int y)
+		{
+			Pos.X = x;
+			Pos.Y = y;
+			Spawn();
+		}
+		
 		public void Attack(GameObject target)
 		{
 			throw new NotImplementedException();
 		}
-
+	
 		public override Stimuli Emit()
 		{
 			return new Stimuli(Dialogs.AmarokAdjacent,this.ToString(), StimuliType.Smell);
+		}
+
+		public void Death()
+		{
+			Dungeon.Rooms[Pos.X, Pos.Y].Exit(this);
+			AmarokDead corpse = new AmarokDead(Pos.X, Pos.Y);
+		}
+	}
+
+	public class AmarokDead : GameObject 
+	{
+		public override bool LocalOnly { get; init; } = true;
+
+		public AmarokDead(int x, int y)
+		{
+			Pos.X = x;
+			Pos.Y = y;
+			Spawn();
+		}
+		
+		public override Stimuli Emit()
+		{
+			return null;
 		}
 	}
 
 	public class Entry : GameObject
 	{
-		public new bool LocalOnly { get; init; } = true;
+		public override bool LocalOnly { get; init; } = true;
 
+		public Entry(int x, int y)
+		{
+			Pos.X = x;
+			Pos.Y = y;
+			LocalOnly = true;
+			Spawn();
+		}
+		
 		public override Stimuli Emit()
 		{
 			return new Stimuli(Dialogs.EntryRoom, this.ToString(), StimuliType.Touch);
@@ -476,9 +579,15 @@ namespace The_Fountain_of_Objects
 	}
 	public class Fountain : GameObject, ICanInteract
 	{
-		public new bool LocalOnly { get; init; } = true;
+		public override bool LocalOnly { get; init; } = true;
 		public bool Active { get; set; } = false;
-		
+
+		public Fountain(int x, int y)
+		{
+			Pos.X  = x;
+			Pos.Y = y;
+			Spawn();
+		}
 		public override Stimuli Emit()
 		{
 			return Active ? new Stimuli(Dialogs.FountainOn, this.ToString(), StimuliType.Audio) : new Stimuli(Dialogs.FountainOff, this.ToString(), StimuliType.Audio);
@@ -630,25 +739,6 @@ namespace The_Fountain_of_Objects
 		{
 			Entities.RemoveAt<GameObject>(gameObject.InRoomIndex);
 		}
-		/*
-		private void Remove(int index)
-		{
-			GameObject[] newArray = new GameObject[Entities.Length - 1];
-			if (index > 0)
-				Array.Copy(Entities, 0, newArray, 0, index);
-			if (index < Entities.Length - 1)
-				Array.Copy(Entities, index + 1, newArray, index, Entities.Length - 1);
-			
-			Entities = newArray;
-		}
-
-		private void Add(GameObject gameObject)
-		{
-			GameObject[] newArray = new GameObject[Entities.Length + 1];
-			newArray[newArray.Length - 1] = gameObject;
-			Entities = newArray;
-		}
-		*/
 	}
 
 	public record Stimuli (string Dialog, string Class, StimuliType Type);
