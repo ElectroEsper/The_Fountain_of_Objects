@@ -90,6 +90,10 @@ namespace The_Fountain_of_Objects
 	}
 	//#################################################
 	// STATIC CLASSES
+	public static class Settings
+	{
+		public static int MaxCharPerLine = 20;
+	}
 	public static class Dungeon
 	{
 		// Made it a Static class, figured it should be available from anywhere???
@@ -169,10 +173,10 @@ namespace The_Fountain_of_Objects
 		public static void Display(string message, ConsoleColor color)
 		{
 			SetColor(color);
-			Console.WriteLine("\n"+message);
+			Console.WriteLine($"{Truncate(message,Settings.MaxCharPerLine)}");
 		}
 
-		public static void Display(string[] message, ConsoleColor color)
+		public static void Display(string[] message, ConsoleColor color) // TODO
 		{
 			SetColor(color);
 			string text = "\n";
@@ -196,6 +200,29 @@ namespace The_Fountain_of_Objects
 			{
 				Console.Write($"- {s}");
 			}
+		}
+
+		private static string Truncate(string text, int lineLenght)
+		{
+			string output = "";
+			string line = "";
+			if (text.Length <=  lineLenght) return text;
+
+			for (int c = 1; c <= text.Length; c++)
+			{
+				// If c is same value as truncated reference...
+				if (c == lineLenght)
+				{
+					// Add current line to output, then reset line...
+					//
+					output += $"{line}\n";
+					line = "";
+				}
+				
+				line += text[c];
+			}
+			
+			return output;
 		}
 	}
 
@@ -235,7 +262,8 @@ namespace The_Fountain_of_Objects
 		public static string FountainOff = " you hear water dripping. The Fountain of Objects.";
 		public static string FountainOn = " you hear flowing water. The Fountain of Objects.";
 		public static string InvalidMove = "A heavy *Thud* echoes. You've hit a wall.";
-
+		public static string AmarokAdjacent = "something putrid, an Amarok is Nearby";
+		public static string AmarokAttack = "Before you have time to react, you are struck down by an Amarok.";
 		public static string HorizontalLine =
 			"-----------------------------------------------------------------------------";
 
@@ -267,6 +295,9 @@ namespace The_Fountain_of_Objects
 		public static string EmptyRoom = " nothing catches your attention.";
 		public static string EntryRoom = "light coming from outside, through the cavern's entrance.";
 		public static string NullRoom = " a wall.";
+		public static string Audio = "You hear";
+		public static string Smell = "You smell";
+		public static string Touch = "You feel";
 	}
 
 	//#################################################
@@ -312,7 +343,28 @@ namespace The_Fountain_of_Objects
 
 		public void Sense()
 		{
-			throw new NotImplementedException();
+			Stimuli[] stimuli = new Stimuli[0];
+			Room[] rooms;
+			rooms = Dungeon.GetAdjacentRooms(Pos.X, Pos.Y);
+			foreach (Room room in rooms)
+			{
+				foreach (GameObject gameObject in room.Entities)
+				{
+					stimuli.AddTo(gameObject.Emit());
+				}
+			}
+
+			string[] text = new string[0];
+			string[] processed = new string[0];
+			foreach (Stimuli stim in stimuli)
+			{
+				if (Array.Exists(processed, s => s == stim.Class)) continue;
+
+				string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog}";
+				processed.AddTo(stim.Class);
+				text.AddTo(message);
+			}
+			
 		}
 	}
 
@@ -325,7 +377,7 @@ namespace The_Fountain_of_Objects
 			throw new NotImplementedException();
 		}
 
-		public override string Emit()
+		public override Stimuli Emit()
 		{
 			return new Stimuli(TODO, this.ToString(), StimuliType.Touch);
 		}
@@ -340,9 +392,9 @@ namespace The_Fountain_of_Objects
 			throw new NotImplementedException();
 		}
 
-		public override string Emit()
+		public override Stimuli Emit()
 		{
-			return new Stimuli(TODO, this.ToString(), StimuliType.Smell);
+			return new Stimuli(Dialogs.AmarokAdjacent,this.ToString(), StimuliType.Smell);
 		}
 	}
 
