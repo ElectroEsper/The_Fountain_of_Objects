@@ -1,15 +1,17 @@
-﻿namespace CustomExtensions
+﻿using System;
+
+namespace CustomExtensions
 {
 	public static class Extensions
 	{
 		extension(Array array)
 		{
-			public void AddTo<T>(T item)
+			public T[] AddTo<T>(T item)
 			{
 				T[] newArray = new T[array.Length + 1];
-				newArray[newArray.Length - 1] = item;
-				//array = newArray;
-				Array.Copy(newArray, 0, array, 0, array.Length);
+				Array.Copy(array, newArray, array.Length);
+				newArray[array.Length] = item;
+				return newArray;
 			}
 
 			public void RemoveAt<T>(int index)
@@ -32,23 +34,10 @@ namespace The_Fountain_of_Objects
 	{
 		public static void Main()
 		{
-			Dungeon.Init(5,3);
-			Player player =  new Player();
-			bool isPlaying = true;
-			Intro();
-			// Game Loop for now, may refractor later...
-			while (isPlaying)
-			{
-				// 1. Player is told what they sense...
-				AtFountainCheck();
-				player.Sense();
-				// 2. Player input their action
-				GetPlayerInput();
-				player.Run();
-				// 3. Action is resolved, gameState updates
-				GameOverCheck();
-				TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
-			}
+			Game game = new Game();
+			game.Run();
+			
+			/*
 			void GetPlayerInput()
 			{
 				string? input = TextEngine.Input();
@@ -64,35 +53,103 @@ namespace The_Fountain_of_Objects
 				};
 				
 			}
-
-			void AtFountainCheck()
-			{
-				if (Dungeon.IsInFountainRoom(player))
-				{
-					// Assume player is at fountain's room...
-					Dungeon.GetFountainRoom().Visited = true;
-				}
-			}
-			void Intro()
-			{
-				TextEngine.Display(Dialogs.Intro,MessageType.Narrative);
-				TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
-			}
-			void GameOverCheck()
-			{
-				if (Dungeon.FountainIsActive && (player.Pos.X == 0 && player.Pos.Y == 0))
-				{
-					isPlaying = false;
-					TextEngine.Display("YOU WIN!", MessageType.Positive);
-				}
-			}
+			*/
+			
 		}
 	}
+	
+	// GAME CLASS
+	public class Game
+	{
+
+		public Game()
+		{
+			// Do things...
+			
+			
+		}
+
+		public void Run()
+		{
+			// Start game...
+			MainMenu();
+		}
+
+		public void MainMenu()
+		{
+			string[] menus = new string[]
+			{
+				"New Game",
+				"Options (Does Nothing)",
+				"Exit"
+			};
+			TextEngine.DisplayList(menus,MessageType.Question);
+			
+			string? input = TextEngine.Input();
+			switch (input)
+			{
+				case "1" :
+					NewGame();
+					break;
+				case "2" :
+					//Options();
+					break;
+				case "3":
+					return;
+				default :
+					break;
+			};
+		}
+
+		public void NewGame()
+		{
+			Console.Clear();
+			TextEngine.Display("Choose the cavern's size:", MessageType.Narrative);
+			TextEngine.DisplayList(new string[]{"small","medium","large"}, MessageType.Question);
+			
+			string? input = TextEngine.Input();
+			switch (input)
+			{
+				case "small" :
+					Dungeon.Init(4,4);
+					break;
+				case "medium" :
+					Dungeon.Init(6,6);
+					break;
+				case "large":
+					Dungeon.Init(8,8);
+					break;
+				default :
+					break;
+			};
+			Console.Clear();
+			GameLoop();
+		}
+
+		public void GameLoop()
+		{
+			Player player =  new Player();
+			bool isPlaying = true;
+			Intro();
+			
+			while (isPlaying)
+			{
+				
+			}
+		}
+		
+		void Intro()
+		{
+			TextEngine.Display(Dialogs.Intro,MessageType.Narrative);
+			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
+		}
+	}
+	
 	//#################################################
 	// STATIC CLASSES
 	public static class Settings
 	{
-		public static int MaxCharPerLine = 20;
+		public static int MaxCharPerLine = 100;
 	}
 	public static class Dungeon
 	{
@@ -119,14 +176,14 @@ namespace The_Fountain_of_Objects
 		public static Room[] GetAdjacentRooms(int x, int y)
 		{
 			// Only 5 entries; 4 directions to move to and where the player stands... 
-			Room[] output = new Room[0];
+			Room[] output = [];
 			
 			// If room is out of bounds, make a variant with a null type.
-			output.AddTo(Rooms[x, y]);
-			if (IsInBounds(x, y + 1)) output.AddTo(Rooms[x, y + 1]);
-			if (IsInBounds(x + 1, y)) output.AddTo(Rooms[x + 1, y]);
-			if (IsInBounds(x , y - 1)) output.AddTo(Rooms[x , y - 1]);
-			if (IsInBounds(x - 1, y)) output.AddTo(Rooms[x - 1, y]);
+			output = output.AddTo(Rooms[x, y]);
+			if (IsInBounds(x, y + 1)) output = output.AddTo(Rooms[x, y + 1]);
+			if (IsInBounds(x + 1, y)) output = output.AddTo(Rooms[x + 1, y]);
+			if (IsInBounds(x , y - 1)) output = output.AddTo(Rooms[x , y - 1]);
+			if (IsInBounds(x - 1, y)) output = output.AddTo(Rooms[x - 1, y]);
 			
 			return output;
 		}
@@ -179,12 +236,12 @@ namespace The_Fountain_of_Objects
 		public static void Display(string[] message, ConsoleColor color) // TODO
 		{
 			SetColor(color);
-			string text = "\n";
+			string text = "";
 			foreach (string s in message)
 			{
 				text += s;
 			}
-			Console.WriteLine(text);
+			Console.WriteLine($"{Truncate(text,Settings.MaxCharPerLine)}");
 		}
 
 		public static void DisplayInline(string message, ConsoleColor color)
@@ -196,9 +253,9 @@ namespace The_Fountain_of_Objects
 		public static void DisplayList(string[] message, ConsoleColor color)
 		{
 			SetColor(color);
-			foreach (string s in message)
+			for (int i = 1;  i <= message.Length; i++)
 			{
-				Console.Write($"- {s}");
+				Console.WriteLine($"{i}- {message[i- 1]}");
 			}
 		}
 
@@ -211,7 +268,7 @@ namespace The_Fountain_of_Objects
 			for (int c = 1; c <= text.Length; c++)
 			{
 				// If c is same value as truncated reference...
-				if (c == lineLenght)
+				if (c % lineLenght == 0)
 				{
 					// Add current line to output, then reset line...
 					//
@@ -219,7 +276,7 @@ namespace The_Fountain_of_Objects
 					line = "";
 				}
 				
-				line += text[c];
+				line += text[c-1];
 			}
 			
 			return output;
@@ -294,17 +351,21 @@ namespace The_Fountain_of_Objects
 		
 		public static string EmptyRoom = " nothing catches your attention.";
 		public static string EntryRoom = "light coming from outside, through the cavern's entrance.";
+		public static string Trap = "a draft of air, a pitfall is nearby.";
 		public static string NullRoom = " a wall.";
 		public static string Audio = "You hear";
 		public static string Smell = "You smell";
 		public static string Touch = "You feel";
 	}
 
+	
+	
+	
 	//#################################################
 	// GAME OBJECTS CLASSES
 	public abstract class GameObject : IPerceptible
 	{
-		public IVector2 Pos { get; set; }
+		public IVector2 Pos { get; set; } = new IVector2();
 		public int InRoomIndex { get; set; }
 		public int Team { get; init; }
 		public bool LocalOnly { get; init; }
@@ -341,6 +402,10 @@ namespace The_Fountain_of_Objects
 			throw new NotImplementedException();
 		}
 
+		public override Stimuli Emit()
+		{
+			throw new NotImplementedException();
+		}
 		public void Sense()
 		{
 			Stimuli[] stimuli = new Stimuli[0];
@@ -348,9 +413,10 @@ namespace The_Fountain_of_Objects
 			rooms = Dungeon.GetAdjacentRooms(Pos.X, Pos.Y);
 			foreach (Room room in rooms)
 			{
-				foreach (GameObject gameObject in room.Entities)
+				if (room.Entities?.Length == null) continue;
+				foreach (GameObject? gameObject in room?.Entities)
 				{
-					stimuli.AddTo(gameObject.Emit());
+					stimuli = stimuli.AddTo(gameObject.Emit());
 				}
 			}
 
@@ -361,10 +427,11 @@ namespace The_Fountain_of_Objects
 				if (Array.Exists(processed, s => s == stim.Class)) continue;
 
 				string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog}";
-				processed.AddTo(stim.Class);
-				text.AddTo(message);
+				processed = processed.AddTo(stim.Class);
+				text = text.AddTo(message);
 			}
-			
+
+			TextEngine.Display(text, MessageType.Narrative);
 		}
 	}
 
@@ -379,7 +446,7 @@ namespace The_Fountain_of_Objects
 
 		public override Stimuli Emit()
 		{
-			return new Stimuli(TODO, this.ToString(), StimuliType.Touch);
+			return new Stimuli(Dialogs.Trap, this.ToString(), StimuliType.Touch);
 		}
 	}
 
@@ -455,7 +522,7 @@ namespace The_Fountain_of_Objects
 		public Stimuli Emit();
 	}
 
-	public interface IVector2 
+	public class IVector2 
 	{
 		public int X { get; set; }
 		public int Y { get; set;}
@@ -517,23 +584,7 @@ namespace The_Fountain_of_Objects
 	{
 		public override void Run(GameObject gameObject)
 		{
-			if (Dungeon.IsInFountainRoom(gameObject))
-			{
-				if (Dungeon.GetFountainRoom().IsActive)
-				{
-					TextEngine.Display(Dialogs.FountainOnActivate, MessageType.Narrative);
-				}
-				else
-				{
-					Dungeon.GetFountainRoom().IsActive = true;
-					Dungeon.TurnOnFountain();
-					TextEngine.Display(Dialogs.FountainOffActivate, MessageType.Positive);
-				}
-			}
-			else
-			{
-				TextEngine.Display(Dialogs.FountainNotPresent, MessageType.Narrative);
-			}
+			
 		}
 	}
 
@@ -541,32 +592,25 @@ namespace The_Fountain_of_Objects
 	{
 		public override void Run(GameObject gameObject)
 		{
-			if (Dungeon.IsInFountainRoom(gameObject))
-			{
-				if (Dungeon.GetFountainRoom().IsActive)
-				{
-					Dungeon.GetFountainRoom().IsActive = false;
-					Dungeon.TurnOffFountain();
-					TextEngine.Display(Dialogs.FountainOnDeactivate, MessageType.Negative);
-				}
-				else
-				{
-					TextEngine.Display(Dialogs.FountainOffDeactivate, MessageType.Narrative);
-				}
-			}
-			else
-			{
-				TextEngine.Display(Dialogs.FountainNotPresent, MessageType.Narrative);
-			}
+			
 		}
 	}
 
+	public class Interact : Command
+	{
+		public override void Run(GameObject gameObject)
+		{
+			
+		}
+	}
+	
+	
 	//#################################################
 	// STRUCTS
 	public class Room
 	{
-		public IVector2 Pos { get; init; }
-		public GameObject[] Entities { get; private set; }
+		public IVector2 Pos { get; init; } = new IVector2();
+		public GameObject[]? Entities { get; private set; }
 		public Room(int x, int y)
 		{
 			Pos.X = x;
