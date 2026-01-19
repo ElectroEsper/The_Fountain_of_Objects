@@ -466,6 +466,7 @@ namespace The_Fountain_of_Objects
 		public void Sense()
 		{
 			Stimuli[] stimuli = new Stimuli[0];
+			GameObject[] interactables = new GameObject[0];
 			Room[] rooms;
 			rooms = Dungeon.GetAdjacentRooms(Pos.X, Pos.Y);
 			foreach (Room room in rooms)
@@ -478,6 +479,11 @@ namespace The_Fountain_of_Objects
 					else
 					{
 						stimuli = stimuli.AddTo(gameObject.Emit());
+					}
+
+					if ( (gameObject.Pos.X == Pos.Y && gameObject.Pos.Y == Pos.Y) && gameObject is ICanInteract)
+					{
+						interactables = interactables.AddTo(gameObject);
 					}
 				}
 			}
@@ -495,6 +501,7 @@ namespace The_Fountain_of_Objects
 
 			TextEngine.Display(text, MessageType.Narrative);
 
+			
 		}
 	}
 
