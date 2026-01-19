@@ -352,6 +352,7 @@ namespace The_Fountain_of_Objects
 		public static string FountainOn = " you hear flowing water. The Fountain of Objects.";
 		public static string InvalidMove = "A heavy *Thud* echoes. You've hit a wall.";
 		public static string AmarokAdjacent = "something putrid, an Amarok is Nearby";
+		public static string AmarokDead = "something heavy, the putrid corpse of an Amarok.";
 		public static string AmarokAttack = "Before you have time to react, you are struck down by an Amarok.";
 		public static string HorizontalLine =
 			"-----------------------------------------------------------------------------";
@@ -543,7 +544,7 @@ namespace The_Fountain_of_Objects
 		}
 	}
 
-	public class AmarokDead : GameObject 
+	public class AmarokDead : GameObject, ICanInteract
 	{
 		public override bool LocalOnly { get; init; } = true;
 
@@ -556,7 +557,11 @@ namespace The_Fountain_of_Objects
 		
 		public override Stimuli Emit()
 		{
-			return null;
+			return new Stimuli(Dialogs.AmarokDead, this.ToString(), StimuliType.Touch);
+		}
+
+		public void Interact()
+		{
 		}
 	}
 
