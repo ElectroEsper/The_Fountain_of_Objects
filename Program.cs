@@ -501,6 +501,16 @@ namespace The_Fountain_of_Objects
 
 			TextEngine.Display(text, MessageType.Narrative);
 
+   string text = "There is ";
+   for (int i = 0; i < interactables.Length(); i++)
+   {
+       text += $"a {interactables[i].ToString()}";
+       if (i < interactables.Length() - 2) {text += ", ";}
+       if (i == interactables.Length() - 2) {text += " and ";
+       if (i == interactables.Length() - 1) {text += ".";
+
+   TextEngine.Display(text, MessageType.Narrative);
+   }
 			
 		}
 	}
