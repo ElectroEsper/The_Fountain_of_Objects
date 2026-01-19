@@ -150,7 +150,9 @@ namespace The_Fountain_of_Objects
 				
 				// Apply player's command
 				player.Run();
-				
+
+				// Handle NPCs
+				ProcessNPCs();
 			}
 		}
 		
@@ -169,7 +171,8 @@ namespace The_Fountain_of_Objects
 		public static bool IsFountainActive { get; private set; }
 
 		public static void AddEnemy(GameObject gameObject) { Enemies = Enemies.AddTo(gameObject); }
-
+		public static void RemoveEnemy(GameObject gameObject) {}
+			
 		public static void AddPlayer(Player player){ Players = Players.AddTo(player); }
 		
 		public static void ActivateFountain() { IsFountainActive = true; }
@@ -491,6 +494,7 @@ namespace The_Fountain_of_Objects
 			}
 
 			TextEngine.Display(text, MessageType.Narrative);
+
 		}
 	}
 
