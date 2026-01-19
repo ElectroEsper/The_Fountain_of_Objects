@@ -152,7 +152,7 @@ namespace The_Fountain_of_Objects
 				player.Run();
 
 				// Handle NPCs
-				ProcessNPCs();
+				//ProcessNPCs();
 			}
 		}
 		
@@ -501,17 +501,26 @@ namespace The_Fountain_of_Objects
 
 			TextEngine.Display(text, MessageType.Narrative);
 
-   string text = "There is ";
-   for (int i = 0; i < interactables.Length(); i++)
-   {
-       text += $"a {interactables[i].ToString()}";
-       if (i < interactables.Length() - 2) {text += ", ";}
-       if (i == interactables.Length() - 2) {text += " and ";
-       if (i == interactables.Length() - 1) {text += ".";
+			string textInter = "There is ";
+			for (int i = 0; i < interactables.Length; i++)
+			{
+				textInter += $"a {interactables[i].ToString()}";
+				if (i < interactables.Length - 2)
+				{
+					textInter += ", ";
+				}
 
-   TextEngine.Display(text, MessageType.Narrative);
-   }
-			
+				if (i == interactables.Length - 2)
+				{
+					textInter += " and ";
+					if (i == interactables.Length - 1)
+					{
+						textInter += ".";
+					}
+				}
+			}
+
+			TextEngine.Display(textInter, MessageType.Narrative);
 		}
 	}
 
@@ -772,5 +781,4 @@ namespace The_Fountain_of_Objects
 	// ENUMS
 	public enum Direction { Current, North, East, South, West}
 	public enum StimuliType {Audio, Smell, Touch}
-
 }
