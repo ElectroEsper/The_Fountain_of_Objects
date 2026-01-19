@@ -480,8 +480,8 @@ namespace The_Fountain_of_Objects
 					{
 						stimuli = stimuli.AddTo(gameObject.Emit());
 					}
-
-					if ( (gameObject.Pos.X == Pos.Y && gameObject.Pos.Y == Pos.Y) && gameObject is ICanInteract)
+					ICanInteract myCanInteract = gameObject as ICanInteract;
+					if ( (gameObject.Pos.X == Pos.X && gameObject.Pos.Y == Pos.Y) && myCanInteract != null)
 					{
 						interactables = interactables.AddTo(gameObject);
 					}
@@ -501,26 +501,29 @@ namespace The_Fountain_of_Objects
 
 			TextEngine.Display(text, MessageType.Narrative);
 
-			string textInter = "There is ";
-			for (int i = 0; i < interactables.Length; i++)
+			if (interactables.Length > 0)
 			{
-				textInter += $"a {interactables[i].ToString()}";
-				if (i < interactables.Length - 2)
+				string textInter = "There is ";
+				for (int i = 0; i < interactables.Length; i++)
 				{
-					textInter += ", ";
-				}
-
-				if (i == interactables.Length - 2)
-				{
-					textInter += " and ";
-					if (i == interactables.Length - 1)
+					textInter += $"a {interactables[i].ToString()}";
+					if (i < interactables.Length - 2)
 					{
-						textInter += ".";
+						textInter += ", ";
+					}
+
+					if (i == interactables.Length - 2)
+					{
+						textInter += " and ";
+						if (i == interactables.Length - 1)
+						{
+							textInter += ".";
+						}
 					}
 				}
-			}
 
-			TextEngine.Display(textInter, MessageType.Narrative);
+				TextEngine.Display(textInter, MessageType.Narrative);
+			}
 		}
 	}
 
