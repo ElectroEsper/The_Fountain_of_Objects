@@ -573,7 +573,7 @@ namespace The_Fountain_of_Objects
         }
         public void Attack(GameObject target)
         {
-            throw new NotImplementedException();
+            target.Death(Dialogs.DeathByTrap);
         }
         public GameObject SearchEnemy()
         {
@@ -583,6 +583,8 @@ namespace The_Fountain_of_Objects
                 if (gameObject == this) continue;
                 if (gameObject.Team != Team.WorldObject) potentialTargets = potentialTargets.AddTo(gameObject);
             }
+
+            return (GameObject)potentialTargets[0];
         }
 
         public override Stimuli Emit()
