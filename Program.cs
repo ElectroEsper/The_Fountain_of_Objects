@@ -91,6 +91,7 @@ namespace The_Fountain_of_Objects
         public void NewGame()
         {
             Console.Clear();
+			GameState.Init();
             TextEngine.Display(Dialogs.HorizontalLine, MessageType.Neutral);
             TextEngine.Display("Choose the cavern's size:", MessageType.Narrative);
             TextEngine.Display("", MessageType.Narrative);
@@ -149,7 +150,8 @@ namespace The_Fountain_of_Objects
 
         void ProcessNPCs()
         {
-            if (GameState.Enemies.Length == 0) return;
+            Console.WriteLine($"GameState.Enemies = {GameState.Enemies.Length}");
+			if (GameState.Enemies.Length == 0) return;
 			ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
             foreach (GameObject gameObject in GameState.Enemies)
             {
@@ -176,8 +178,18 @@ namespace The_Fountain_of_Objects
         public static GameObject[] Enemies { get; private set; }
         public static Player[] Players { get; private set; }
         public static bool IsFountainActive { get; private set; }
-
-        public static void AddEnemy(GameObject gameObject) { Enemies = Enemies.AddTo(gameObject); }
+		
+		public static void Init()
+		{
+				Enemies = new GameObject[0];
+				Players = new Player[0];
+				IsFountainActive = false;
+		}
+		
+        public static void AddEnemy(GameObject gameObject) 
+		{
+			Enemies = Enemies.AddTo(gameObject); 
+		}
         public static void RemoveEnemy(GameObject gameObject) { }
 
         public static void AddPlayer(Player player) { Players = Players.AddTo(player); }
@@ -421,9 +433,9 @@ namespace The_Fountain_of_Objects
         public abstract bool LocalOnly { get; init; }
         internal void Spawn()
         {
-            Console.WriteLine($"Spawn:{ToString()} @ {Pos.X},{Pos.Y}");
+            //Console.WriteLine($"Spawn:{ToString()} @ {Pos.X},{Pos.Y}");
             Dungeon.Rooms[Pos.X, Pos.Y].Enter(this);
-            Console.WriteLine($"Room Ent.: {Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length}");
+            //Console.WriteLine($"Room Ent.: {Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length}");
         }
         public abstract Stimuli Emit();
         //public override string ToString() => ClassName;
@@ -572,7 +584,7 @@ namespace The_Fountain_of_Objects
             LocalOnly = false;
 
             Spawn();
-			GameState.AddEnemy((GameObject)this);
+			GameState.AddEnemy(this);
         }
         public void Attack(IAlive target)
         {
