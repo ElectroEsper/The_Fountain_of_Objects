@@ -137,7 +137,7 @@ namespace The_Fountain_of_Objects
                 player.Run();
 
                 // Handle NPCs
-                //ProcessNPCs();
+                ProcessNPCs();
                 CheckWinConditions(player);
             }
         }
@@ -340,12 +340,12 @@ namespace The_Fountain_of_Objects
         //public static ConsoleColor Important = ConsoleColor.
     }
 
-    public static class Team
+    public static class Teams
     {
         public static int WorldObject = 0;
         public static int Player = 1;
         public static int Trap = 2;
-        public static int Montster = 3;
+        public static int Monster = 3;
     }
     public static class Dialogs
     {
@@ -404,6 +404,7 @@ namespace The_Fountain_of_Objects
         public static string Audio = "You hear";
         public static string Smell = "You smell";
         public static string Touch = "You feel";
+		public static string DeathByTrap = "You expected firm ground, instead your feet gave into the void. Moments later, your life is forfeited, as you lay there, impaled...";
     }
 
 
@@ -432,7 +433,7 @@ namespace The_Fountain_of_Objects
         public string NameSingular { get; init; }
         public string NamePlural { get; init; }
         public bool Alive { get; private set; } = true;
-        public override int Team = Team.Player;
+        public override int Team {get; init; } = Teams.Player;
         public override bool LocalOnly { get; init; } = true;
         public ICommand? Command { get; set; }
         public Player()
@@ -562,7 +563,7 @@ namespace The_Fountain_of_Objects
     public class Trap : GameObject, ICanAttack
     {
         public override bool LocalOnly { get; init; }
-        public override int Team = Team.Trap;
+        public override int Team {get; init; } = Teams.Trap;
         public Trap(int x, int y)
         {
             Pos.X = x;
@@ -581,7 +582,7 @@ namespace The_Fountain_of_Objects
             foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
             {
                 if (gameObject == this) continue;
-                if (gameObject.Team != Team.WorldObject) potentialTargets = potentialTargets.AddTo(gameObject);
+                if (gameObject.Team != Teams.WorldObject) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
             }
 
             return potentialTargets[0];
@@ -596,7 +597,7 @@ namespace The_Fountain_of_Objects
     public class Amarok : GameObject, ICanAttack, IAlive
     {
         public override bool LocalOnly { get; init; } = false;
-        public override int Team = Team.Monster;
+        public override int Team {get; init; } = Teams.Monster;
         public Amarok(int x, int y)
         {
             Pos.X = x;
@@ -604,12 +605,12 @@ namespace The_Fountain_of_Objects
             Spawn();
         }
 
-        public void Attack(GameObject target)
+        public void Attack(IAlive target)
         {
             throw new NotImplementedException();
         }
 
-        public GameObject SearchEnemy()
+        public IAlive SearchEnemy()
         {
             throw new NotImplementedException();
         }
@@ -628,7 +629,7 @@ namespace The_Fountain_of_Objects
 
     public class AmarokDead : GameObject, ICanInteract
     {
-        public override int Team = Team.WorldObject;
+        public override int Team {get; init; } = Teams.WorldObject;
         public string NameSingular { get; init; } = "Amarok";
         public string NamePlural { get; init; } = "Amaroks";
         public override bool LocalOnly { get; init; } = true;
@@ -653,7 +654,7 @@ namespace The_Fountain_of_Objects
     public class Entry : GameObject
     {
         public override bool LocalOnly { get; init; } = true;
-        public override int Team = Team.WorldObject;
+        public override int Team {get; init; } = Teams.WorldObject;
         public Entry(int x, int y)
         {
             Pos.X = x;
@@ -671,7 +672,7 @@ namespace The_Fountain_of_Objects
     {
         public string NameSingular { get; init; } = "Fountain";
         public string NamePlural { get; init; } = "Fountains";
-        public override int Team = Team.WorldObject;
+        public override int Team {get; init; } = Teams.WorldObject;
         public override bool LocalOnly { get; init; } = true;
         public bool Active { get; set; } = false;
 
@@ -715,8 +716,8 @@ namespace The_Fountain_of_Objects
 
     public interface ICanAttack
     {
-        public void Attack(GameObject? target);
-        public GameObject SearchEnemy();
+        public void Attack(IAlive? target);
+        public IAlive SearchEnemy();
     }
 
     public interface ICanInteract
