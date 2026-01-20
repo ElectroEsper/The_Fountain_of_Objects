@@ -571,11 +571,11 @@ namespace The_Fountain_of_Objects
 
             Spawn();
         }
-        public void Attack(GameObject target)
+        public void Attack(IAlive target)
         {
             target.Death(Dialogs.DeathByTrap);
         }
-        public GameObject SearchEnemy()
+        public IAlive SearchEnemy()
         {
             IAlive[] potentialTargets = new IAlive[0];
             foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
@@ -584,7 +584,7 @@ namespace The_Fountain_of_Objects
                 if (gameObject.Team != Team.WorldObject) potentialTargets = potentialTargets.AddTo(gameObject);
             }
 
-            return (GameObject)potentialTargets[0];
+            return potentialTargets[0];
         }
 
         public override Stimuli Emit()
