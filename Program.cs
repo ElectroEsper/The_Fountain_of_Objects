@@ -149,7 +149,8 @@ namespace The_Fountain_of_Objects
 
         void ProcessNPCs()
         {
-            ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
+            if (GameState.Enemies.Length == 0) return;
+			ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
             foreach (GameObject gameObject in GameState.Enemies)
             {
                 if (gameObject as ICanAttack != null) { EntitiesThatAttack.AddTo((ICanAttack)gameObject); }
@@ -571,6 +572,7 @@ namespace The_Fountain_of_Objects
             LocalOnly = false;
 
             Spawn();
+			GameState.AddEnemy((GameObject)this);
         }
         public void Attack(IAlive target)
         {
@@ -603,6 +605,7 @@ namespace The_Fountain_of_Objects
             Pos.X = x;
             Pos.Y = y;
             Spawn();
+			GameState.AddEnemy((GameObject)this);
         }
 
         public void Attack(IAlive target)
