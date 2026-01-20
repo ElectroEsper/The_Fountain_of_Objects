@@ -344,6 +344,8 @@ namespace The_Fountain_of_Objects
     {
         public static int WorldObject = 0;
         public static int Player = 1;
+        public static int Trap = 2;
+        public static int Montster = 3;
     }
     public static class Dialogs
     {
@@ -413,7 +415,7 @@ namespace The_Fountain_of_Objects
     {
         public IVector2 Pos { get; set; } = new IVector2();
         public int InRoomIndex { get; set; }
-        public int Team { get; init; }
+        public abstract int Team { get; init; }
         public abstract bool LocalOnly { get; init; }
         internal void Spawn()
         {
@@ -430,7 +432,7 @@ namespace The_Fountain_of_Objects
         public string NameSingular { get; init; }
         public string NamePlural { get; init; }
         public bool Alive { get; private set; } = true;
-        // Personnal reminder, this is a "Character" not the controller...
+        public override int Team = Team.Player;
         public override bool LocalOnly { get; init; } = true;
         public ICommand? Command { get; set; }
         public Player()
@@ -560,7 +562,7 @@ namespace The_Fountain_of_Objects
     public class Trap : GameObject, ICanAttack
     {
         public override bool LocalOnly { get; init; }
-
+        public override int Team = Team.Trap;
         public Trap(int x, int y)
         {
             Pos.X = x;
@@ -575,7 +577,11 @@ namespace The_Fountain_of_Objects
         }
         public GameObject SearchEnemy()
         {
-            throw new NotImplementedException();
+            IAlive[] potentialTargets = new IAlive[0];
+            foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
+            {
+                
+            }
         }
 
         public override Stimuli Emit()
@@ -587,7 +593,7 @@ namespace The_Fountain_of_Objects
     public class Amarok : GameObject, ICanAttack, IAlive
     {
         public override bool LocalOnly { get; init; } = false;
-
+        public override int Team = Team.Monster;
         public Amarok(int x, int y)
         {
             Pos.X = x;
@@ -619,6 +625,7 @@ namespace The_Fountain_of_Objects
 
     public class AmarokDead : GameObject, ICanInteract
     {
+        public override int Team = Team.WorldObject;
         public string NameSingular { get; init; } = "Amarok";
         public string NamePlural { get; init; } = "Amaroks";
         public override bool LocalOnly { get; init; } = true;
@@ -643,7 +650,7 @@ namespace The_Fountain_of_Objects
     public class Entry : GameObject
     {
         public override bool LocalOnly { get; init; } = true;
-
+        public override int Team = Team.WorldObject;
         public Entry(int x, int y)
         {
             Pos.X = x;
@@ -661,6 +668,7 @@ namespace The_Fountain_of_Objects
     {
         public string NameSingular { get; init; } = "Fountain";
         public string NamePlural { get; init; } = "Fountains";
+        public override int Team = Team.WorldObject;
         public override bool LocalOnly { get; init; } = true;
         public bool Active { get; set; } = false;
 
