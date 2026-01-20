@@ -111,6 +111,7 @@ namespace The_Fountain_of_Objects
 			Console.Clear();
 			TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
 			TextEngine.Display("Choose the cavern's size:", MessageType.Narrative);
+			TextEngine.Display("", MessageType.Narrative);
 			TextEngine.DisplayList(new string[]{"small","medium","large"}, MessageType.Question);
 			TextEngine.DisplayInline("\nEnter your choice:",MessageType.Neutral);
 			string? input = TextEngine.Input();
@@ -143,6 +144,7 @@ namespace The_Fountain_of_Objects
 			while (isPlaying)
 			{
 				// Player senses environment
+				TextEngine.Display(Dialogs.HorizontalLine,MessageType.Neutral);
 				player.Sense();
 				
 				// Wait for player's input...
@@ -410,10 +412,14 @@ namespace The_Fountain_of_Objects
 			Dungeon.Rooms[Pos.X, Pos.Y].Enter(this);
 		}
 		public abstract Stimuli Emit();
+		//public override string ToString() => ClassName;
 
 	}
 	public class Player : GameObject, IController, IAlive, ICanInteract
 	{
+		public string NameSingular { get; init; }
+		public string NamePlural { get; init; }
+
 		// Personnal reminder, this is a "Character" not the controller...
 		public override bool LocalOnly { get; init; } = true;
 		public ICommand? Command { get; set; }
@@ -466,7 +472,7 @@ namespace The_Fountain_of_Objects
 		public void Sense()
 		{
 			Stimuli[] stimuli = new Stimuli[0];
-			GameObject[] interactables = new GameObject[0];
+			ICanInteract[] interactables = new ICanInteract[0];
 			Room[] rooms;
 			rooms = Dungeon.GetAdjacentRooms(Pos.X, Pos.Y);
 			foreach (Room room in rooms)
@@ -480,33 +486,36 @@ namespace The_Fountain_of_Objects
 					{
 						stimuli = stimuli.AddTo(gameObject.Emit());
 					}
-					ICanInteract myCanInteract = gameObject as ICanInteract;
-					if ( (gameObject.Pos.X == Pos.X && gameObject.Pos.Y == Pos.Y) && myCanInteract != null)
+					ICanInteract interactableGameObject = gameObject as ICanInteract;
+					if ( (gameObject.Pos.X == Pos.X && gameObject.Pos.Y == Pos.Y) && interactableGameObject != null)
 					{
-						interactables = interactables.AddTo(gameObject);
+						interactables = interactables.AddTo(interactableGameObject);
 					}
 				}
 			}
 
 			string[] text = new string[0];
 			string[] processed = new string[0];
-			foreach (Stimuli stim in stimuli)
+			if (stimuli.Length > 0)
 			{
-				if (Array.Exists(processed, s => s == stim.Class)) continue;
+				foreach (Stimuli stim in stimuli)
+				{
+					if (Array.Exists(processed, s => s == stim.Class)) continue;
 
-				string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog}";
-				processed = processed.AddTo(stim.Class);
-				text = text.AddTo(message);
+					string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog}";
+					processed = processed.AddTo(stim.Class);
+					text = text.AddTo(message);
+				}
+
+				TextEngine.Display(text, MessageType.Narrative);
 			}
-
-			TextEngine.Display(text, MessageType.Narrative);
 
 			if (interactables.Length > 0)
 			{
 				string textInter = "There is ";
 				for (int i = 0; i < interactables.Length; i++)
 				{
-					textInter += $"a {interactables[i].ToString()}";
+					textInter += $"a {interactables[i].NameSingular}";
 					if (i < interactables.Length - 2)
 					{
 						textInter += ", ";
@@ -579,6 +588,8 @@ namespace The_Fountain_of_Objects
 
 	public class AmarokDead : GameObject, ICanInteract
 	{
+		public string NameSingular { get; init; } = "Amarok";
+		public string NamePlural { get; init; } =  "Amaroks";
 		public override bool LocalOnly { get; init; } = true;
 
 		public AmarokDead(int x, int y)
@@ -617,6 +628,8 @@ namespace The_Fountain_of_Objects
 	}
 	public class Fountain : GameObject, ICanInteract
 	{
+		public string NameSingular { get; init; } = "Fountain";
+		public string NamePlural { get; init; } = "Fountains";
 		public override bool LocalOnly { get; init; } = true;
 		public bool Active { get; set; } = false;
 
@@ -633,7 +646,6 @@ namespace The_Fountain_of_Objects
 
 		public void Interact()
 		{
-			throw new NotImplementedException();
 		}
 	}
 
@@ -655,7 +667,10 @@ namespace The_Fountain_of_Objects
 
 	public interface ICanInteract
 	{
-		public void Interact();
+		public string NameSingular { get; init; }
+		public string NamePlural { get; init; }
+		public void Interact() {}
+
 	}
 
 	public interface IController
