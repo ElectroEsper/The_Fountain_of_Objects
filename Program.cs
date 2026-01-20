@@ -580,7 +580,8 @@ namespace The_Fountain_of_Objects
             IAlive[] potentialTargets = new IAlive[0];
             foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
             {
-                
+                if (gameObject == this) continue;
+                if (gameObject.Team != Team.WorldObject) potentialTargets = potentialTargets.AddTo(gameObject);
             }
         }
 
