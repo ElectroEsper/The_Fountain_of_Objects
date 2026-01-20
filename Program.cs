@@ -155,10 +155,11 @@ namespace The_Fountain_of_Objects
 			ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
             foreach (GameObject gameObject in GameState.Enemies)
             {
-                if (gameObject as ICanAttack != null) { EntitiesThatAttack.AddTo((ICanAttack)gameObject); }
+                if (gameObject as ICanAttack != null) { EntitiesThatAttack = EntitiesThatAttack.AddTo((ICanAttack)gameObject);}
+
 
             }
-
+			Console.WriteLine($"GameState.EntitiesThatAttack = {EntitiesThatAttack.Length}");
             foreach (ICanAttack attacker in EntitiesThatAttack)
             {
                 attacker.Attack(attacker.SearchEnemy());
@@ -598,7 +599,7 @@ namespace The_Fountain_of_Objects
                 if (gameObject == this) continue;
                 if (gameObject.Team != Teams.WorldObject) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
             }
-
+			Console.WriteLine($"{potentialTargets[0]}");
             return potentialTargets[0];
         }
 
