@@ -115,7 +115,9 @@ namespace The_Fountain_of_Objects
             {
                 case "1":
                     Dungeon.Init(4, 4);
-                    new Trap(0, 1);
+                    new Trap(3, 2);
+                    new Maelstrom(2, 1);
+                    new Amarok(1, 0);
                     break;
                 case "2":
                     Dungeon.Init(6, 6);
@@ -163,7 +165,7 @@ namespace The_Fountain_of_Objects
             GameState.GameOver = GameState.IsFountainActive && (player.Pos.X == 0 && player.Pos.Y == 0);
         }
 
-        void ProcessNPCs()
+        public static void ProcessNPCs()
         {
             //Console.WriteLine($"GameState.Enemies = {GameState.Enemies.Length}");
             if (GameState.Enemies.Length == 0) return;
@@ -435,7 +437,7 @@ namespace The_Fountain_of_Objects
                                                     "The Fountain of Objects, deprived of its core, returns to dormancy.";
         public static string FountainNotPresent = "You search for the fountain, yet find nothing resembling it.";
 
-        public static string EmptyRoom = " nothing catches your attention.";
+        public static string EmptyRoom = "nothing catches your attention.";
         public static string EntryRoom = "light coming from outside, through the cavern's entrance.";
         public static string Trap = "a draft of air, a pitfall is nearby.";
         public static string NullRoom = " a wall.";
@@ -443,6 +445,10 @@ namespace The_Fountain_of_Objects
         public static string Smell = "You smell";
         public static string Touch = "You feel";
         public static string DeathByTrap = "You expected firm ground, instead your feet gave into the void. Moments later, your life is forfeited, as you lay there, impaled...";
+        public static string DeathByAmarok = "Before you realized it yourself, the Amarok in this room has you mauled and bleed of your life...";
+        public static string Maelstrom = "the growling and groaning of a maelstrom nearby.";
+        public static string Shot = "";
+        public static string MissedShot = "You take a shot, yet never never heard an impact.";
     }
 
 
@@ -466,7 +472,7 @@ namespace The_Fountain_of_Objects
         //public override string ToString() => ClassName;
 
     }
-    public class Player : GameObject, IController, IAlive, ICanInteract
+    public class Player : GameObject, IController, IAlive
     {
         public string NameSingular { get; init; }
         public string NamePlural { get; init; }
@@ -474,6 +480,7 @@ namespace The_Fountain_of_Objects
         public override int Team { get; init; } = Teams.Player;
         public override bool LocalOnly { get; init; } = true;
         public ICommand? Command { get; set; }
+        public int ArrowLeft { get; private set; } = 5;
         public Player()
         {
             Pos.X = 0;
@@ -493,9 +500,23 @@ namespace The_Fountain_of_Objects
             Alive = false;
         }
 
-        public void Interact()
+        public void Shoot(int x, int y)
         {
-            throw new NotImplementedException();
+            ArrowLeft -= 1;
+            if (Dungeon.Rooms[Pos.X + x, Pos.Y + y].Entities.Length > 0)
+            {
+                foreach (GameObject gameObject in Dungeon.Rooms[Pos.X + x, Pos.Y + y].Entities)
+                {
+                    IAlive alive = gameObject as IAlive;
+                    if (alive != null)
+                    {
+                        alive.Death(Dialogs.Shot);
+                        return;
+                    }
+                }
+            }
+
+            TextEngine.Display(Dialogs.MissedShot, MessageType.Narrative);
         }
 
         public void Input()
@@ -511,10 +532,10 @@ namespace The_Fountain_of_Objects
                 "move west" => new MoveWest(),
                 "fountain activate" => new TurnOn(),
                 "fountain deactivate" => new TurnOff(),
-                "shoot north" => null,
-                "shoot east" => null,
-                "shoot south" => null,
-                "shoot west" => null,
+                "shoot north" => new ShootNorth(),
+                "shoot east" => new ShootEast(),
+                "shoot south" => new ShootSouth(),
+                "shoot west" => new ShootWest(),
                 _ => null
             };
 
@@ -626,13 +647,59 @@ namespace The_Fountain_of_Objects
                 if (gameObject == this) continue;
                 if (gameObject.Team != Teams.WorldObject) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
             }
-            //Console.WriteLine($"{potentialTargets[0]}");
             return potentialTargets.Length == 0 ? null : potentialTargets[0];
         }
 
         public override Stimuli Emit()
         {
             return new Stimuli(Dialogs.Trap, this.ToString(), StimuliType.Touch);
+        }
+    }
+
+    public class Maelstrom : GameObject, ICanAttack, IAlive
+    {
+        public override bool LocalOnly { get; init; } = false;
+        public override int Team { get; init; } = Teams.Monster;
+        public Maelstrom(int x, int y)
+        {
+            Pos.X = x;
+            Pos.Y = y;
+
+            Spawn();
+            GameState.AddEnemy(this);
+        }
+
+        public IAlive SearchEnemy()
+        {
+            IAlive[] potentialTargets = new IAlive[0];
+            if (Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length == 0) return null;
+            foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
+            {
+                if (gameObject == this) continue;
+                if (gameObject.Team == Teams.Player) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
+            }
+            return potentialTargets.Length == 0 ? null : potentialTargets[0];
+        }
+
+        public void Attack(IAlive? target)
+        {
+            if (target == null) return;
+            GameObject castedObject = (GameObject)target;
+            Dungeon.MoveTo(castedObject, Math.Clamp(castedObject.Pos.X + 2, 0, Dungeon.Width - 1), Math.Clamp(castedObject.Pos.Y + 1, 0, Dungeon.Height - 1));
+            Dungeon.MoveTo(this, Pos.X - 2 % Dungeon.Width, Pos.Y - 1 % Dungeon.Height);
+            Game.ProcessNPCs();
+            // mesage to player
+        }
+
+        public override Stimuli Emit()
+        {
+            return new Stimuli(Dialogs.Maelstrom, this.ToString(), StimuliType.Audio);
+        }
+
+        public void Death(string deathMessage)
+        {
+            Dungeon.Rooms[Pos.X, Pos.Y].Exit(this);
+            // play message
         }
     }
 
@@ -650,12 +717,20 @@ namespace The_Fountain_of_Objects
 
         public void Attack(IAlive target)
         {
-            throw new NotImplementedException();
+            target?.Death(Dialogs.DeathByAmarok);
         }
 
         public IAlive SearchEnemy()
         {
-            throw new NotImplementedException();
+            IAlive[] potentialTargets = new IAlive[0];
+            if (Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length == 0) return null;
+            foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
+            {
+                if (gameObject == this) continue;
+                if (gameObject.Team == Teams.Player) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
+            }
+            return potentialTargets.Length == 0 ? null : potentialTargets[0];
+
         }
 
         public override Stimuli Emit()
@@ -666,6 +741,7 @@ namespace The_Fountain_of_Objects
         public void Death(string deathMessage)
         {
             Dungeon.Rooms[Pos.X, Pos.Y].Exit(this);
+
             AmarokDead corpse = new AmarokDead(Pos.X, Pos.Y);
         }
     }
@@ -794,6 +870,7 @@ namespace The_Fountain_of_Objects
     {
         void Run(GameObject gameObject);
     }
+
     public abstract class Command : ICommand
     {
         public abstract void Run(GameObject gameObject);
@@ -813,6 +890,7 @@ namespace The_Fountain_of_Objects
             return true;
         }
     }
+
     public class MoveNorth : Command
     {
         public override void Run(GameObject gameObject)
@@ -822,6 +900,7 @@ namespace The_Fountain_of_Objects
             //gameObject.Pos.Y += 1;
         }
     }
+
     public class MoveSouth : Command
     {
         public override void Run(GameObject gameObject)
@@ -831,6 +910,7 @@ namespace The_Fountain_of_Objects
             //gameObject.Pos.Y -= 1;
         }
     }
+
     public class MoveEast : Command
     {
         public override void Run(GameObject gameObject)
@@ -840,6 +920,7 @@ namespace The_Fountain_of_Objects
             //gameObject.Pos.X += 1;
         }
     }
+
     public class MoveWest : Command
     {
         public override void Run(GameObject gameObject)
@@ -889,6 +970,8 @@ namespace The_Fountain_of_Objects
         }
     }
 
+
+
     public class TurnOff : Command
     {
         public override void Run(GameObject gameObject)
@@ -935,6 +1018,43 @@ namespace The_Fountain_of_Objects
 
         }
     }
+
+    public class ShootNorth : Command
+    {
+        public override void Run(GameObject gameObject)
+        {
+            Player? player = gameObject as Player;
+            player.Shoot(0, 1);
+        }
+    }
+
+    public class ShootSouth : Command
+    {
+        public override void Run(GameObject gameObject)
+        {
+            Player? player = gameObject as Player;
+            player.Shoot(0, -1);
+        }
+    }
+
+    public class ShootWest : Command
+    {
+        public override void Run(GameObject gameObject)
+        {
+            Player? player = gameObject as Player;
+            player.Shoot(-1, 0);
+        }
+    }
+
+    public class ShootEast : Command
+    {
+        public override void Run(GameObject gameObject)
+        {
+            Player? player = gameObject as Player;
+            player.Shoot(1, 0);
+        }
+    }
+
 
 
     //#################################################
