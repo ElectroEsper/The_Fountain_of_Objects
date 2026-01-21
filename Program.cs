@@ -208,7 +208,10 @@ namespace The_Fountain_of_Objects
         {
             Enemies = Enemies.AddTo(gameObject);
         }
-        public static void RemoveEnemy(GameObject gameObject) { }
+        public static void RemoveEnemy(GameObject gameObject)
+        {
+            Enemies = Enemies.RemoveFrom(gameObject);
+        }
 
         public static void AddPlayer(Player player) { Players = Players.AddTo(player); }
 
@@ -447,8 +450,9 @@ namespace The_Fountain_of_Objects
         public static string DeathByTrap = "You expected firm ground, instead your feet gave into the void. Moments later, your life is forfeited, as you lay there, impaled...";
         public static string DeathByAmarok = "Before you realized it yourself, the Amarok in this room has you mauled and bleed of your life...";
         public static string Maelstrom = "the growling and groaning of a maelstrom nearby.";
-        public static string Shot = "";
-        public static string MissedShot = "You take a shot, yet never never heard an impact.";
+        public static string Shot = "You take a shot, and hear a satisfying impact. You've hit something.";
+        public static string MissedShot = "You take a shot, never to hear an impact.";
+        public static string OutOfArrow = "You reach for an arrow, but alas, you are out.";
     }
 
 
@@ -502,6 +506,11 @@ namespace The_Fountain_of_Objects
 
         public void Shoot(int x, int y)
         {
+            if (ArrowLeft == 0)
+            {
+                TextEngine.Display(Dialogs.OutOfArrow, MessageType.Negative);
+                return;
+            }
             ArrowLeft -= 1;
             if (Dungeon.Rooms[Pos.X + x, Pos.Y + y].Entities.Length > 0)
             {
@@ -741,16 +750,14 @@ namespace The_Fountain_of_Objects
         public void Death(string deathMessage)
         {
             Dungeon.Rooms[Pos.X, Pos.Y].Exit(this);
-
+            GameState.RemoveEnemy(this);
             AmarokDead corpse = new AmarokDead(Pos.X, Pos.Y);
         }
     }
 
-    public class AmarokDead : GameObject, ICanInteract
+    public class AmarokDead : GameObject
     {
         public override int Team { get; init; } = Teams.WorldObject;
-        public string NameSingular { get; init; } = "Amarok";
-        public string NamePlural { get; init; } = "Amaroks";
         public override bool LocalOnly { get; init; } = true;
 
         public AmarokDead(int x, int y)
@@ -763,10 +770,6 @@ namespace The_Fountain_of_Objects
         public override Stimuli Emit()
         {
             return new Stimuli(Dialogs.AmarokDead, this.ToString(), StimuliType.Touch);
-        }
-
-        public void Interact()
-        {
         }
     }
 
