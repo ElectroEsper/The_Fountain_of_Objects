@@ -22,6 +22,19 @@ namespace CustomExtensions
             if (index < array.Length - 1)
                 Array.Copy(array, index + 1, newArray, index, array.Length - 1);
         }
+
+        public static T[] RemoveFrom<T>(this T[] array, T item)
+        {
+            T[] newArray = new T[array.Length - 1];
+            int index = Array.IndexOf(array, item);
+
+            if (index > 0)
+                Array.Copy(array, 0, newArray, 0, index);
+            if (index < array.Length - 1)
+                Array.Copy(array, index + 1, newArray, index, array.Length - 1);
+
+            return newArray;
+        }
     }
 }
 
@@ -91,7 +104,7 @@ namespace The_Fountain_of_Objects
         public void NewGame()
         {
             Console.Clear();
-			GameState.Init();
+            GameState.Init();
             TextEngine.Display(Dialogs.HorizontalLine, MessageType.Neutral);
             TextEngine.Display("Choose the cavern's size:", MessageType.Narrative);
             TextEngine.Display("", MessageType.Narrative);
@@ -141,6 +154,8 @@ namespace The_Fountain_of_Objects
                 ProcessNPCs();
                 CheckWinConditions(player);
             }
+
+            if (!player.Alive) TextEngine.Display(GameState.DeathMessage, MessageType.Narrative);
         }
 
         void CheckWinConditions(Player player)
@@ -150,16 +165,16 @@ namespace The_Fountain_of_Objects
 
         void ProcessNPCs()
         {
-            Console.WriteLine($"GameState.Enemies = {GameState.Enemies.Length}");
-			if (GameState.Enemies.Length == 0) return;
-			ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
+            //Console.WriteLine($"GameState.Enemies = {GameState.Enemies.Length}");
+            if (GameState.Enemies.Length == 0) return;
+            ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
             foreach (GameObject gameObject in GameState.Enemies)
             {
-                if (gameObject as ICanAttack != null) { EntitiesThatAttack = EntitiesThatAttack.AddTo((ICanAttack)gameObject);}
+                if (gameObject as ICanAttack != null) { EntitiesThatAttack = EntitiesThatAttack.AddTo((ICanAttack)gameObject); }
 
 
             }
-			Console.WriteLine($"GameState.EntitiesThatAttack = {EntitiesThatAttack.Length}");
+            //Console.WriteLine($"GameState.EntitiesThatAttack = {EntitiesThatAttack.Length}");
             foreach (ICanAttack attacker in EntitiesThatAttack)
             {
                 attacker.Attack(attacker.SearchEnemy());
@@ -179,18 +194,18 @@ namespace The_Fountain_of_Objects
         public static GameObject[] Enemies { get; private set; }
         public static Player[] Players { get; private set; }
         public static bool IsFountainActive { get; private set; }
-		
-		public static void Init()
-		{
-				Enemies = new GameObject[0];
-				Players = new Player[0];
-				IsFountainActive = false;
-		}
-		
-        public static void AddEnemy(GameObject gameObject) 
-		{
-			Enemies = Enemies.AddTo(gameObject); 
-		}
+
+        public static void Init()
+        {
+            Enemies = new GameObject[0];
+            Players = new Player[0];
+            IsFountainActive = false;
+        }
+
+        public static void AddEnemy(GameObject gameObject)
+        {
+            Enemies = Enemies.AddTo(gameObject);
+        }
         public static void RemoveEnemy(GameObject gameObject) { }
 
         public static void AddPlayer(Player player) { Players = Players.AddTo(player); }
@@ -244,6 +259,15 @@ namespace The_Fountain_of_Objects
             if (IsInBounds(x - 1, y)) output = output.AddTo(Rooms[x - 1, y]);
 
             return output;
+        }
+
+        public static void MoveTo(GameObject gameObject, int x, int y)
+        {
+            IVector2 pos = gameObject.Pos;
+            Rooms[pos.X, pos.Y].Exit(gameObject);
+            Rooms[x, y].Enter(gameObject);
+            gameObject.Pos.X = x;
+            gameObject.Pos.Y = y;
         }
 
         private static bool IsInBounds(int x, int y)
@@ -418,7 +442,7 @@ namespace The_Fountain_of_Objects
         public static string Audio = "You hear";
         public static string Smell = "You smell";
         public static string Touch = "You feel";
-		public static string DeathByTrap = "You expected firm ground, instead your feet gave into the void. Moments later, your life is forfeited, as you lay there, impaled...";
+        public static string DeathByTrap = "You expected firm ground, instead your feet gave into the void. Moments later, your life is forfeited, as you lay there, impaled...";
     }
 
 
@@ -447,7 +471,7 @@ namespace The_Fountain_of_Objects
         public string NameSingular { get; init; }
         public string NamePlural { get; init; }
         public bool Alive { get; private set; } = true;
-        public override int Team {get; init; } = Teams.Player;
+        public override int Team { get; init; } = Teams.Player;
         public override bool LocalOnly { get; init; } = true;
         public ICommand? Command { get; set; }
         public Player()
@@ -509,10 +533,12 @@ namespace The_Fountain_of_Objects
             rooms = Dungeon.GetAdjacentRooms(Pos.X, Pos.Y);
             foreach (Room room in rooms)
             {
-                if (room.Entities?.Length == null) continue;
+                if (room.Entities?.Length == null || room.Entities?.Length == 0) continue;
                 foreach (GameObject? gameObject in room?.Entities)
                 {
                     // if stimuli is localOnly and is not in same pos as player 
+                    if (gameObject == this) continue;
+                    // Console.WriteLine($"{gameObject.ToString()}");
                     if (gameObject.LocalOnly && (gameObject.Pos.X != Pos.X || gameObject.Pos.Y != Pos.Y))
                     {
                         TextEngine.Display($"{gameObject.ToString()}", MessageType.Negative);
@@ -540,7 +566,7 @@ namespace The_Fountain_of_Objects
                     if (stim == null) continue;
                     if (Array.Exists(processed, s => s == stim.Class)) continue;
 
-                    string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog}";
+                    string message = $"{typeof(Dialogs).GetField(stim.Type.ToString()).GetValue(null)} {stim.Dialog} ";
                     processed = processed.AddTo(stim.Class);
                     text = text.AddTo(message);
                 }
@@ -564,7 +590,7 @@ namespace The_Fountain_of_Objects
                         textInter += " and ";
                         if (i == interactables.Length - 1)
                         {
-                            textInter += ".";
+                            textInter += ". ";
                         }
                     }
                 }
@@ -577,7 +603,7 @@ namespace The_Fountain_of_Objects
     public class Trap : GameObject, ICanAttack
     {
         public override bool LocalOnly { get; init; }
-        public override int Team {get; init; } = Teams.Trap;
+        public override int Team { get; init; } = Teams.Trap;
         public Trap(int x, int y)
         {
             Pos.X = x;
@@ -585,22 +611,23 @@ namespace The_Fountain_of_Objects
             LocalOnly = false;
 
             Spawn();
-			GameState.AddEnemy(this);
+            GameState.AddEnemy(this);
         }
-        public void Attack(IAlive target)
+        public void Attack(IAlive? target)
         {
-            target.Death(Dialogs.DeathByTrap);
+            target?.Death(Dialogs.DeathByTrap);
         }
         public IAlive SearchEnemy()
         {
             IAlive[] potentialTargets = new IAlive[0];
+            if (Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length == 0) return null;
             foreach (GameObject gameObject in Dungeon.Rooms[Pos.X, Pos.Y].Entities)
             {
                 if (gameObject == this) continue;
                 if (gameObject.Team != Teams.WorldObject) potentialTargets = potentialTargets.AddTo<IAlive>((IAlive)gameObject);
             }
-			Console.WriteLine($"{potentialTargets[0]}");
-            return potentialTargets[0];
+            //Console.WriteLine($"{potentialTargets[0]}");
+            return potentialTargets.Length == 0 ? null : potentialTargets[0];
         }
 
         public override Stimuli Emit()
@@ -612,13 +639,13 @@ namespace The_Fountain_of_Objects
     public class Amarok : GameObject, ICanAttack, IAlive
     {
         public override bool LocalOnly { get; init; } = false;
-        public override int Team {get; init; } = Teams.Monster;
+        public override int Team { get; init; } = Teams.Monster;
         public Amarok(int x, int y)
         {
             Pos.X = x;
             Pos.Y = y;
             Spawn();
-			GameState.AddEnemy((GameObject)this);
+            GameState.AddEnemy((GameObject)this);
         }
 
         public void Attack(IAlive target)
@@ -645,7 +672,7 @@ namespace The_Fountain_of_Objects
 
     public class AmarokDead : GameObject, ICanInteract
     {
-        public override int Team {get; init; } = Teams.WorldObject;
+        public override int Team { get; init; } = Teams.WorldObject;
         public string NameSingular { get; init; } = "Amarok";
         public string NamePlural { get; init; } = "Amaroks";
         public override bool LocalOnly { get; init; } = true;
@@ -670,7 +697,7 @@ namespace The_Fountain_of_Objects
     public class Entry : GameObject
     {
         public override bool LocalOnly { get; init; } = true;
-        public override int Team {get; init; } = Teams.WorldObject;
+        public override int Team { get; init; } = Teams.WorldObject;
         public Entry(int x, int y)
         {
             Pos.X = x;
@@ -688,7 +715,7 @@ namespace The_Fountain_of_Objects
     {
         public string NameSingular { get; init; } = "Fountain";
         public string NamePlural { get; init; } = "Fountains";
-        public override int Team {get; init; } = Teams.WorldObject;
+        public override int Team { get; init; } = Teams.WorldObject;
         public override bool LocalOnly { get; init; } = true;
         public bool Active { get; set; } = false;
 
@@ -791,7 +818,8 @@ namespace The_Fountain_of_Objects
         public override void Run(GameObject gameObject)
         {
             if (!IsValidMove(gameObject.Pos.X, gameObject.Pos.Y + 1)) return;
-            gameObject.Pos.Y += 1;
+            Dungeon.MoveTo(gameObject, gameObject.Pos.X, gameObject.Pos.Y + 1);
+            //gameObject.Pos.Y += 1;
         }
     }
     public class MoveSouth : Command
@@ -799,7 +827,8 @@ namespace The_Fountain_of_Objects
         public override void Run(GameObject gameObject)
         {
             if (!IsValidMove(gameObject.Pos.X, gameObject.Pos.Y - 1)) return;
-            gameObject.Pos.Y -= 1;
+            Dungeon.MoveTo(gameObject, gameObject.Pos.X, gameObject.Pos.Y - 1);
+            //gameObject.Pos.Y -= 1;
         }
     }
     public class MoveEast : Command
@@ -807,7 +836,8 @@ namespace The_Fountain_of_Objects
         public override void Run(GameObject gameObject)
         {
             if (!IsValidMove(gameObject.Pos.X + 1, gameObject.Pos.Y)) return;
-            gameObject.Pos.X += 1;
+            Dungeon.MoveTo(gameObject, gameObject.Pos.X + 1, gameObject.Pos.Y);
+            //gameObject.Pos.X += 1;
         }
     }
     public class MoveWest : Command
@@ -815,7 +845,8 @@ namespace The_Fountain_of_Objects
         public override void Run(GameObject gameObject)
         {
             if (!IsValidMove(gameObject.Pos.X - 1, gameObject.Pos.Y)) return;
-            gameObject.Pos.X -= 1;
+            Dungeon.MoveTo(gameObject, gameObject.Pos.X - 1, gameObject.Pos.Y);
+            //gameObject.Pos.X -= 1;
         }
     }
 
@@ -930,7 +961,7 @@ namespace The_Fountain_of_Objects
         }
         public void Exit(GameObject gameObject)
         {
-            Entities.RemoveAt<GameObject>(gameObject.InRoomIndex);
+            Entities = Entities.RemoveFrom<GameObject>(gameObject);
         }
     }
 
