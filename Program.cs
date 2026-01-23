@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
+using System.ComponentModel.Design;
 
 namespace CustomExtensions
 {
     public static class Extensions
     {
-
+        // These entensions are not pretty, but it does what I need since I won't be using list and/or dictionnary in this project
         public static T[] AddTo<T>(this T[] array, T item)
         {
             T[] newArray = new T[array.Length + 1];
@@ -42,7 +43,6 @@ namespace CustomExtensions
 namespace The_Fountain_of_Objects
 {
     using CustomExtensions;
-    using The_Fountain_of_Objects;
 
     public static partial class Program
     {
@@ -79,7 +79,6 @@ namespace The_Fountain_of_Objects
             string[] menus = new string[]
             {
                 "New Game",
-                "Options (Does Nothing)",
                 "Exit"
             };
             TextEngine.DisplayList(menus, MessageType.Question);
@@ -90,9 +89,6 @@ namespace The_Fountain_of_Objects
             {
                 case "1":
                     NewGame();
-                    break;
-                case "2":
-                    //Options();
                     break;
                 case "3":
                     return;
@@ -121,14 +117,28 @@ namespace The_Fountain_of_Objects
                     break;
                 case "2":
                     Dungeon.Init(6, 6);
+                    new Trap(3, 2);
+                    new Trap(4, 4);
+                    new Maelstrom(3, 3);
+                    new Amarok(1, 0);
+                    new Amarok(4, 1);
                     break;
                 case "3":
                     Dungeon.Init(8, 8);
+                    new Trap(1, 2);
+                    new Trap(3, 4);
+                    new Trap(4, 5);
+                    new Trap(5, 6);
+                    new Maelstrom(2, 1);
+                    new Maelstrom(5, 1);
+                    new Amarok(7, 5);
+                    new Amarok(3, 2);
+                    new Amarok(1, 5);
                     break;
                 default:
                     break;
             };
-            //Console.Clear();
+            Console.Clear();
 
 
             GameLoop();
@@ -157,7 +167,20 @@ namespace The_Fountain_of_Objects
                 CheckWinConditions(player);
             }
 
-            if (!player.Alive) TextEngine.Display(GameState.DeathMessage, MessageType.Narrative);
+            if (!player.Alive)
+            {
+                TextEngine.Display(GameState.DeathMessage, MessageType.Narrative);
+                TextEngine.Display(Dialogs.Lost, MessageType.Negative);
+            }
+            else
+            {
+                TextEngine.Display(Dialogs.Win, MessageType.Positive);
+            }
+            
+            TextEngine.Display("Press any key to return to the main menu...", MessageType.Neutral);
+            Console.ReadKey(true);
+            Console.Clear();
+            MainMenu();
         }
 
         void CheckWinConditions(Player player)
@@ -167,7 +190,6 @@ namespace The_Fountain_of_Objects
 
         public static void ProcessNPCs()
         {
-            //Console.WriteLine($"GameState.Enemies = {GameState.Enemies.Length}");
             if (GameState.Enemies.Length == 0) return;
             ICanAttack[] EntitiesThatAttack = new ICanAttack[0];
             foreach (GameObject gameObject in GameState.Enemies)
@@ -176,7 +198,6 @@ namespace The_Fountain_of_Objects
 
 
             }
-            //Console.WriteLine($"GameState.EntitiesThatAttack = {EntitiesThatAttack.Length}");
             foreach (ICanAttack attacker in EntitiesThatAttack)
             {
                 attacker.Attack(attacker.SearchEnemy());
@@ -191,6 +212,9 @@ namespace The_Fountain_of_Objects
         }
     }
 
+    //#################################################
+    // STATIC CLASSES
+    //
     public static class GameState
     {
         public static GameObject[] Enemies { get; private set; }
@@ -223,8 +247,7 @@ namespace The_Fountain_of_Objects
 
     }
 
-    //#################################################
-    // STATIC CLASSES
+    
     public static class Settings
     {
         public static int MaxCharPerLine = 100;
@@ -292,21 +315,17 @@ namespace The_Fountain_of_Objects
         }
         private static void SetEntry(int x, int y)
         {
-            //Rooms[x, y] = new Room(x, y, new GameObject[] { new Entry(x, y) });
             new Entry(x, y);
         }
         private static void SetFountain(int x, int y)
         {
-            Rooms[x, y] = new Room(x, y, new GameObject[] { new Fountain(x, y) });
+           new Fountain(x, y);
         }
     }
     public static class TextEngine
     {
-        // Your job is to take in events and display text relevant to said events
-
         public static string Input()
         {
-            //DisplayInline(Dialogs.InputPrompt, MessageType.Question);
             SetColor(MessageType.Player);
             return new string(Console.ReadLine());
         }
@@ -370,19 +389,7 @@ namespace The_Fountain_of_Objects
             return output;
         }
     }
-
-    public static class MessageType
-    {
-        public static ConsoleColor Narrative = ConsoleColor.Magenta;
-        public static ConsoleColor Sense = ConsoleColor.Yellow;
-        public static ConsoleColor Player = ConsoleColor.Cyan;
-        public static ConsoleColor Question = ConsoleColor.White;
-        public static ConsoleColor Positive = ConsoleColor.Green;
-        public static ConsoleColor Negative = ConsoleColor.Red;
-        public static ConsoleColor Neutral = ConsoleColor.Gray;
-        //public static ConsoleColor Important = ConsoleColor.
-    }
-
+    
     public static class Teams
     {
         public static int WorldObject = 0;
@@ -453,8 +460,24 @@ namespace The_Fountain_of_Objects
         public static string Shot = "You take a shot, and hear a satisfying impact. You've hit something.";
         public static string MissedShot = "You take a shot, never to hear an impact.";
         public static string OutOfArrow = "You reach for an arrow, but alas, you are out.";
+        public static string Win = "You've won!";
+        public static string Lost = "You've lost.";
     }
-
+    
+    public static class MessageType
+    {
+        public static ConsoleColor Narrative = ConsoleColor.Magenta;
+        public static ConsoleColor Sense = ConsoleColor.Yellow;
+        public static ConsoleColor Player = ConsoleColor.Cyan;
+        public static ConsoleColor Question = ConsoleColor.White;
+        public static ConsoleColor Positive = ConsoleColor.Green;
+        public static ConsoleColor Negative = ConsoleColor.Red;
+        public static ConsoleColor Neutral = ConsoleColor.Gray;
+        //public static ConsoleColor Important = ConsoleColor.
+    }
+    
+    //#################################################
+    //#################################################
 
 
 
@@ -468,13 +491,9 @@ namespace The_Fountain_of_Objects
         public abstract bool LocalOnly { get; init; }
         internal void Spawn()
         {
-            //Console.WriteLine($"Spawn:{ToString()} @ {Pos.X},{Pos.Y}");
             Dungeon.Rooms[Pos.X, Pos.Y].Enter(this);
-            //Console.WriteLine($"Room Ent.: {Dungeon.Rooms[Pos.X, Pos.Y].Entities.Length}");
         }
         public abstract Stimuli Emit();
-        //public override string ToString() => ClassName;
-
     }
     public class Player : GameObject, IController, IAlive
     {
@@ -526,6 +545,10 @@ namespace The_Fountain_of_Objects
             }
 
             TextEngine.Display(Dialogs.MissedShot, MessageType.Narrative);
+            if (ArrowLeft == 0)
+                TextEngine.Display("This was your last arrow.", MessageType.Narrative);
+            else
+                TextEngine.Display($"You have {ArrowLeft} arrow(s) left.", MessageType.Narrative);
         }
 
         public void Input()
@@ -545,6 +568,7 @@ namespace The_Fountain_of_Objects
                 "shoot east" => new ShootEast(),
                 "shoot south" => new ShootSouth(),
                 "shoot west" => new ShootWest(),
+                "help" => new HelpCommand(),
                 _ => null
             };
 
@@ -568,10 +592,10 @@ namespace The_Fountain_of_Objects
                 {
                     // if stimuli is localOnly and is not in same pos as player 
                     if (gameObject == this) continue;
-                    // Console.WriteLine($"{gameObject.ToString()}");
+
                     if (gameObject.LocalOnly && (gameObject.Pos.X != Pos.X || gameObject.Pos.Y != Pos.Y))
                     {
-                        TextEngine.Display($"{gameObject.ToString()}", MessageType.Negative);
+                        //TextEngine.Display($"{gameObject.ToString()}", MessageType.Negative);
                         continue;
                     }
                     else
@@ -825,6 +849,9 @@ namespace The_Fountain_of_Objects
         }
     }
 
+    //#################################################
+    // Interface
+    //
     public interface IAlive
     {
         public void Death(string deathMessage);
@@ -860,6 +887,9 @@ namespace The_Fountain_of_Objects
         public bool LocalOnly { get; init; }
         public Stimuli Emit();
     }
+    
+    //#################################################
+    //#################################################
 
     public class IVector2
     {
@@ -869,6 +899,7 @@ namespace The_Fountain_of_Objects
     }
     //#################################################
     // COMMANDS
+    //
     public interface ICommand
     {
         void Run(GameObject gameObject);
@@ -1058,10 +1089,25 @@ namespace The_Fountain_of_Objects
         }
     }
 
+    public class HelpCommand : Command
+    {
+        public override void Run(GameObject gameObject)
+        {
+            TextEngine.Display("Here be a list of all the commands, and what they do:\n",MessageType.Player);
+            TextEngine.DisplayList(new string[]
+            {
+                "'move <north, east, south, west>  => Move your character.",
+                "'shoot <north, east, south, west> => Make you shoot an arrow.",
+                "'fountain <activate, deactivate>  => Let's you either turn on or off the fountain."
+            }, MessageType.Player);
+        }
+    }
+
 
 
     //#################################################
-    // STRUCTS
+    // Room
+    //
     public class Room
     {
         public IVector2 Pos { get; init; } = new IVector2();
@@ -1087,10 +1133,13 @@ namespace The_Fountain_of_Objects
             Entities = Entities.RemoveFrom<GameObject>(gameObject);
         }
     }
-
+    
+    // Record
+    //#################################################
     public record Stimuli(string Dialog, string Class, StimuliType Type);
 
     // ENUMS
+    //#################################################
     public enum Direction { Current, North, East, South, West }
     public enum StimuliType { Audio, Smell, Touch }
 }
