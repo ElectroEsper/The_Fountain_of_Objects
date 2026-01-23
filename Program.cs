@@ -208,7 +208,7 @@ namespace The_Fountain_of_Objects
         {
             TextEngine.Display(Dialogs.Intro, MessageType.Narrative);
             TextEngine.Display(Dialogs.HorizontalLine, MessageType.Neutral);
-            TextEngine.Display("", MessageType.Neutral);
+            TextEngine.Display("Tip : Type <help> at anytime to get a list of commands", MessageType.Neutral);
         }
     }
 
@@ -337,7 +337,8 @@ namespace The_Fountain_of_Objects
         public static void Display(string message, ConsoleColor color)
         {
             SetColor(color);
-            Console.WriteLine($"{Truncate(message, Settings.MaxCharPerLine)}");
+            //Console.WriteLine($"{Truncate(message, Settings.MaxCharPerLine)}");
+            Console.WriteLine($"{message}", color);
         }
 
         public static void Display(string[] message, ConsoleColor color) // TODO
@@ -348,7 +349,8 @@ namespace The_Fountain_of_Objects
             {
                 text += s;
             }
-            Console.WriteLine($"{Truncate(text, Settings.MaxCharPerLine)}");
+            //Console.WriteLine($"{Truncate(text, Settings.MaxCharPerLine)}");
+            Console.WriteLine($"{text}", color);
         }
 
         public static void DisplayInline(string message, ConsoleColor color)
